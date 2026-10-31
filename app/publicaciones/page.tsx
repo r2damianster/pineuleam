@@ -9,7 +9,6 @@ import type { ItemProduccion } from '@/lib/produccion';
 type TabKey = 'all' | 'articulo' | 'libro' | 'ponencia' | 'propiedad';
 type ArticleCategoryFilter = 'all' | 'regional' | 'impacto';
 
-const ALL_PERIODS = 'all';
 const SINCE_2025 = 'since2025';
 const SINCE_2025_FIRST_DATE = '2025-01-01';
 const ALL_PROJECTS = 'all';
@@ -58,7 +57,7 @@ export default function PublicacionesPage() {
     () =>
       items.filter((item) => {
         if (selectedPeriod === SINCE_2025 && item.fecha < SINCE_2025_FIRST_DATE) return false;
-        if (selectedPeriod !== ALL_PERIODS && selectedPeriod !== SINCE_2025 && item.periodo !== selectedPeriod) return false;
+        if (selectedPeriod !== SINCE_2025 && item.periodo !== selectedPeriod) return false;
         if (selectedProject === NO_PROJECT) return !item.proyectoId;
         if (selectedProject !== ALL_PROJECTS && item.proyectoId !== selectedProject) return false;
         return true;
@@ -118,7 +117,6 @@ export default function PublicacionesPage() {
                   className={`${selectClassName} mt-1 font-normal`}
                 >
                   <option value={SINCE_2025}>{t.publications.since2025}</option>
-                  <option value={ALL_PERIODS}>{t.publications.allPeriods}</option>
                   {periodOptions.map((period) => (
                     <option key={period} value={period}>
                       {period}
