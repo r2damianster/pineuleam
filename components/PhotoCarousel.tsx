@@ -51,17 +51,19 @@ export default function PhotoCarousel({ ubicacion }: { ubicacion: string }) {
       onMouseLeave={() => setPaused(false)}
     >
       <div className="relative w-full h-[300px] md:h-[480px]">
-        <div
-          className="flex h-full transition-transform duration-700 ease-in-out"
-          style={{ transform: `translateX(-${index * 100}%)` }}
-        >
-          {fotos.map((foto) => (
-            <div key={foto.id} className="relative w-full h-full flex-shrink-0">
+        <div className="relative h-full">
+          {fotos.map((foto, fotoIndex) => (
+            <div
+              key={foto.id}
+              aria-hidden={fotoIndex !== index}
+              className={`absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${fotoIndex === index ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+            >
               <Image
                 src={foto.url}
                 alt={foto.titulo || ''}
                 fill
-                priority={false}
+                priority={fotoIndex === 0}
+                loading="eager"
                 className="object-cover"
                 style={{ objectPosition: `center ${foto.posicion ?? 50}%` }}
                 sizes="100vw"
