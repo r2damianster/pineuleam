@@ -8,7 +8,7 @@ const shouldApply = process.argv.includes('--apply')
 
 const PROYECTO_NOMBRE_OFICIAL =
   'Lograr la innovación pedagógica e internacionalización del proceso de formación inicial y continua de docentes para el desarrollo humano y sostenible.'
-const NOMBRE_EVENTO = 'Jornada académica conjunta UPV/EHU–ULEAM'
+const NOMBRE_EVENTO = 'Congreso de Innovación Educativa, Inclusión y Sostenibilidad en Educación Superior (INEDUS)'
 const ARTURO = { authorName: 'Arturo Damián Rodríguez Zambrano', isCarreraAuthor: true, esEstudiante: false, usuarioId: 1 }
 const JHONNY = { authorName: 'Jhonny Saulo Villafuerte Holguín', isCarreraAuthor: true, esEstudiante: false, usuarioId: 13 }
 const JOHANA = { authorName: 'Johana Elizabeth Bello Piguave', isCarreraAuthor: true, esEstudiante: false, usuarioId: 125 }
@@ -91,7 +91,7 @@ const buildContribution = (ponencia) => {
     ciudad: 'Manta',
     fechaPublicacion: new Date(`2026-10-${ponencia.day}T05:00:00.000Z`),
     campoDetallado: `Ponencia presentada el ${ponencia.day} de octubre de 2026, ${ponencia.time} (hora de Manta), en ${ponencia.place}.`,
-    estado: 'PUBLICADO',
+    estado: 'OTRO',
     filiacion: 'Universidad Laica Eloy Alfaro de Manabí',
     identificacionParticipante: isArturo ? '131041753-8' : null,
     categoria: isArturo ? 'AUXILIAR_I' : null,

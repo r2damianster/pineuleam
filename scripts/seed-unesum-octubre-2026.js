@@ -30,7 +30,7 @@ const conferencias = [
   {
     fecha: '2026-10-30',
     hora: '14:00',
-    titulo: 'Brecha generacional: la etiqueta de «nativos digitales» frente a la evidencia',
+    titulo: 'Desarrollo y uso de aplicaciones en la universidad: perspectiva crítica desde la brecha generacional',
     nombreEvento: 'Semana de capacitación «Innovación y gestión del conocimiento en la transformación educativa»',
     organizadorEvento: 'Carrera de Desarrollo de Software, Universidad Estatal del Sur de Manabí (UNESUM)',
     ciudad: 'Jipijapa (modalidad virtual)',
@@ -67,7 +67,7 @@ async function main() {
             ciudad: conferencia.ciudad,
             fechaPublicacion: new Date(`${conferencia.fecha}T05:00:00.000Z`),
             campoDetallado: conferencia.detalle,
-            estado: 'PUBLICADO',
+            estado: 'OTRO',
             filiacion: 'Universidad Laica Eloy Alfaro de Manabí',
             identificacionParticipante: '131041753-8',
             categoria: 'AUXILIAR_I',
