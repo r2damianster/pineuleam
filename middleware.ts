@@ -41,6 +41,7 @@ export async function middleware(request: NextRequest) {
     '/vinculacion/asistencia',
     '/vinculacion/registrar-evaluar',
     '/vinculacion/pasantes',
+    '/vinculacion/horas',
     '/vinculacion/topes-horas',
     '/vinculacion/proyeccion-horas',
     '/vinculacion/supervisar',
@@ -112,7 +113,7 @@ export async function middleware(request: NextRequest) {
 
     // Gestión (crear espacios, administrar pasantes): solo líder de Vinculación / superadmin.
     if (
-      (pathname.startsWith('/vinculacion/pasantes') || pathname.startsWith('/vinculacion/espacios') || pathname.startsWith('/vinculacion/topes-horas') || pathname.startsWith('/vinculacion/proyeccion-horas')) &&
+      (pathname.startsWith('/vinculacion/pasantes') || pathname.startsWith('/vinculacion/espacios') || pathname.startsWith('/vinculacion/horas') || pathname.startsWith('/vinculacion/topes-horas') || pathname.startsWith('/vinculacion/proyeccion-horas')) &&
       !puedeGestionarVinculacion(session)
     ) {
        return NextResponse.redirect(new URL('/portal/dashboard', request.url));
