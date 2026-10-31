@@ -68,6 +68,8 @@ export default async function PortalDashboard() {
   let horasPodcastAcreditadas = 0;
   let episodiosPendientes = 0;
   let horasAsistenciaAcreditadas = 0;
+  let horasInvestigacionAcreditadas = 0;
+  let horasAutonomasAcreditadas = 0;
   let autonomasHabilitadas = true;
   let investigacionHabilitada = true;
   if (rol === 'estudiante') {
@@ -90,6 +92,14 @@ export default async function PortalDashboard() {
       SELECT COALESCE(SUM(ha.horas), 0) AS total FROM horas_asistencia_instructor ha WHERE ha.usuario_id = ${usuarioId}
     `;
     horasAsistenciaAcreditadas = Number(filaAsistencia?.total || 0);
+
+    const [filaOtras] = await sql`
+      SELECT
+        (SELECT COALESCE(SUM(horas), 0) FROM actividades_investigacion_pasante WHERE usuario_id = ${usuarioId} AND estado_aprobacion = 'aprobado') AS investigacion,
+        (SELECT COALESCE(SUM(horas), 0) FROM actividades_autonomas_pasante WHERE usuario_id = ${usuarioId} AND estado_aprobacion = 'aprobado') AS autonomas
+    `;
+    horasInvestigacionAcreditadas = Number(filaOtras?.investigacion || 0);
+    horasAutonomasAcreditadas = Number(filaOtras?.autonomas || 0);
 
     // Perfil de horas (topes_horas_pasante): un tipo con tope 0 no está habilitado y no se ofrece.
     const topesPasante = await obtenerTopes(sql, usuarioId);
@@ -178,7 +188,7 @@ export default async function PortalDashboard() {
               <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-amber-500 hover:shadow-lg transition">
                 <h3 className="text-xl font-bold text-gray-800 mb-2">📊 Mi Avance</h3>
                 <p className="text-gray-600 mb-2 text-sm">Tus horas acreditables, espacios asignados, beneficiarios y evaluaciones registradas.</p>
-                <p className="text-3xl font-bold text-amber-600 mb-1">{horasPodcastAcreditadas + horasAsistenciaAcreditadas} h <span className="text-sm font-normal text-gray-500">acreditadas ({horasPodcastAcreditadas} podcast + {horasAsistenciaAcreditadas} asistencia)</span></p>
+                <p className="text-3xl font-bold text-amber-600 mb-1">{horasPodcastAcreditadas + horasAsistenciaAcreditadas + horasInvestigacionAcreditadas + horasAutonomasAcreditadas} h <span className="text-sm font-normal text-gray-500">acreditadas ({horasPodcastAcreditadas} podcast + {horasAsistenciaAcreditadas} asistencia + {horasInvestigacionAcreditadas} investigación + {horasAutonomasAcreditadas} autónomas)</span></p>
                 {episodiosPendientes > 0 && (
                   <p className="text-xs text-orange-600 mb-3">⏳ Tienes {episodiosPendientes} episodio(s) esperando aprobación del profesor — sus horas se suman cuando se apruebe.</p>
                 )}

@@ -98,10 +98,15 @@ export async function GET() {
       ORDER BY ae.fecha DESC
     `;
 
-    const tieneInvestigacion = usuario.modulos_acceso.includes('investigacion');
-    const [horasInvestigacionRow] = tieneInvestigacion
-      ? await sql`SELECT COALESCE(SUM(horas), 0)::float AS total, COUNT(*)::int AS reportes FROM actividades_investigacion_pasante WHERE usuario_id = ${usuarioId} AND estado_aprobacion = 'aprobado'`
-      : [{ total: 0, reportes: 0 }];
+    // El módulo 'investigacion' solo habilita REGISTRAR actividades; las horas aprobadas se muestran siempre
+    // (por ejemplo las asignadas por el Congreso a pasantes sin ese módulo).
+    const [horasInvestigacionRow] = await sql`
+      SELECT COALESCE(SUM(horas) FILTER (WHERE estado_aprobacion = 'aprobado'), 0)::float AS total,
+             COUNT(*) FILTER (WHERE estado_aprobacion = 'aprobado')::int AS reportes,
+             COALESCE(SUM(horas) FILTER (WHERE estado_aprobacion = 'pendiente'), 0)::float AS pendientes
+      FROM actividades_investigacion_pasante WHERE usuario_id = ${usuarioId}`;
+    const tieneInvestigacion = usuario.modulos_acceso.includes('investigacion')
+      || horasInvestigacionRow.total > 0 || horasInvestigacionRow.pendientes > 0;
 
     const topesPasante = await obtenerTopes(sql, usuarioId);
     const horasTipoPasante = await obtenerHorasPorTipo(sql, usuarioId);

@@ -38,7 +38,7 @@ interface Avance {
   difusion: { aprobadas: number; pendientes: number; podcasts: number };
   horasPodcast: { total: number; episodios: number; pendientes: number; episodiosPendientes: number };
   horasAsistencia: { total: number; sesiones: number; sesionesPendientes: number };
-  horasInvestigacion: { total: number; reportes: number } | null;
+  horasInvestigacion: { total: number; reportes: number; pendientes?: number } | null;
   horasAutonomas?: { total: number; pendientes: number; maximo: number };
   asistenciasRechazadas?: { id: number; fecha: string; espacio_nombre: string; motivo_rechazo: string | null; registrada_por_mi: boolean }[];
   beneficiariosDetalle?: BeneficiarioDetalle[];
@@ -181,6 +181,7 @@ export default function MiAvancePage() {
                     <div className="flex justify-between text-[11px] text-slate-300 mt-2">
                       {asistenciaHabilitada && <span>🎓 Asistencia: {avance.horasAsistencia.total}h</span>}
                       {podcastHabilitado && <span>🎙 Podcasts: {avance.horasPodcast.total}h</span>}
+                      {avance.horasInvestigacion && <span>🔬 Investigación: {avance.horasInvestigacion.total}h</span>}
                     </div>
                   </div>
                 </div>
@@ -210,6 +211,14 @@ export default function MiAvancePage() {
                     value={`${avance.horasPodcast.total} h`}
                     sub={`${avance.horasPodcast.episodios} episodios aprobados (${avance.horasPodcast.episodiosPendientes} pend.)`}
                     color="border-purple-500"
+                  />
+                )}
+                {avance.horasInvestigacion && (
+                  <Tile
+                    label="🔬 Horas de Investigación"
+                    value={`${avance.horasInvestigacion.total} h`}
+                    sub={`${avance.horasInvestigacion.reportes} registro(s) aprobado(s)${avance.horasInvestigacion.pendientes ? ` (${avance.horasInvestigacion.pendientes} h pend.)` : ''}`}
+                    color="border-indigo-500"
                   />
                 )}
                 {avance.horasAutonomas && avance.horasAutonomas.maximo > 0 && (
