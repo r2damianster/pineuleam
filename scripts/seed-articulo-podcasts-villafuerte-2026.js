@@ -38,7 +38,7 @@ async function main() {
       campoDetallado:
         'Estudio cuantitativo, transversal y descriptivo-explicativo con 171 estudiantes de ocho disciplinas de tres universidades de Ecuador y España (muestreo no probabilístico por conveniencia). Con dos cuestionarios validados evalúa la percepción del uso de pódcast como recurso educativo: motivación, comprensión, utilidad percibida y perspectiva de género. La percepción fue mayoritariamente positiva, sobre todo cuando el docente acompaña el proceso, y la valoración de la perspectiva de género predice significativamente la utilidad percibida del pódcast.',
       estado: 'PUBLICADO',
-      linkPublicacion: DOI_URL,
+      linkPublicacion: 'https://archive.aessweb.com/index.php/5052/article/view/6309',
       linkRevista: 'https://www.aessweb.com',
       filiacion: 'Universidad Laica Eloy Alfaro de Manabí',
       identificacionParticipante: cedula && /^\d{10}$/.test(cedula) ? `${cedula.slice(0, 9)}-${cedula.slice(9)}` : cedula || null,
