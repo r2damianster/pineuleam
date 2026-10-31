@@ -89,7 +89,9 @@ export default function Header({ siteName, logoSrc = '/images/logos/logo-carrera
         { label: t.nav.projectsHeader, isHeader: true },
         { href: '/investigacion/proyecto-innovacion', label: t.nav.innovacionesLabel },
         { href: '/investigacion/desarrollo-habilidades', label: t.desarrolloProject.navLabel },
-        { href: '/investigacion/mentoring', label: t.mentoringProject.navLabel }
+        { href: '/investigacion/mentoring', label: t.mentoringProject.navLabel },
+        { label: t.nav.productionHeader, isHeader: true },
+        { href: '/publicaciones', label: t.nav.publicationsAndContributions },
       ]
     },
     { label: t.nav.vinculacion, children: [{ href: '/vinculacion/dinamicas-linguisticas', label: t.vinculacionProject.navLabel }] },
@@ -117,6 +119,8 @@ export default function Header({ siteName, logoSrc = '/images/logos/logo-carrera
             ...proyectosDeGrupo('investigacion', true),
             { label: t.nav.projectsHeader, isHeader: true },
             ...proyectosDeGrupo('investigacion', false),
+            { label: t.nav.productionHeader, isHeader: true },
+            { href: '/publicaciones', label: t.nav.publicationsAndContributions },
           ],
         },
         { label: t.nav.vinculacion, children: proyectosDeGrupo('vinculacion') },
