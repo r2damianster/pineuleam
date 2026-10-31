@@ -19,11 +19,6 @@ const DASHBOARD_TABS: Exclude<TabKey, 'all'>[] = ['articulo', 'libro', 'ponencia
 const tabOfItem = (item: ItemProduccion): Exclude<TabKey, 'all'> =>
   item.tipo === 'capitulo' ? 'libro' : item.tipo;
 
-const currentPeriodLabel = () => {
-  const today = new Date();
-  return `${today.getFullYear()}-${today.getMonth() + 1 >= 9 ? 2 : 1}`;
-};
-
 export default function PublicacionesPage() {
   const [items, setItems] = useState<ItemProduccion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,11 +32,7 @@ export default function PublicacionesPage() {
   useEffect(() => {
     fetch('/api/produccion')
       .then((response) => (response.ok ? response.json() : []))
-      .then((data: ItemProduccion[]) => {
-        setItems(data);
-        // Por defecto se muestra el periodo en curso, si ya tiene producción registrada.
-        if (data.some((item) => item.periodo === currentPeriodLabel())) setSelectedPeriod(currentPeriodLabel());
-      })
+      .then((data: ItemProduccion[]) => setItems(data))
       .finally(() => setLoading(false));
   }, []);
 
