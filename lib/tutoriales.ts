@@ -15,6 +15,14 @@ export interface Tutorial {
 
 export const TUTORIALES: Tutorial[] = [
   {
+    id: 'rollup',
+    titulo: 'Roll up y pósters: crea el cartel de la carrera o de tu proyecto',
+    descripcion: 'Paso a paso en /portal/rollup: elegir carrera o proyecto, medida, tipografía y colores, datos y cifras con casilla, más texto o más imágenes, carrete de fotos y descarga en PDF. Recuerda: el roll up no se guarda, descárgalo.',
+    duracion: '1:53',
+    archivo: '/video/rollup-tutorial.mp4',
+    roles: ['profesor', 'admin'],
+  },
+  {
     id: 'utilidades',
     titulo: 'Utilidades: generadores de documentos',
     descripcion: 'Recorrido por las 6 herramientas de /utilidades: Acta Técnica, Oficios, Convocatorias, PATs de Maestría, Pares Lectores y Certificados.',

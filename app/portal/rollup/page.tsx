@@ -394,7 +394,7 @@ export default function RollUpPage() {
       <main className="mx-auto mt-16 max-w-7xl px-4 py-8">
         <Link href="/portal/dashboard" className="text-xs font-semibold text-blue-600 hover:underline">&larr; Volver al Portal</Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-800">Generador de roll up y pósters</h1>
-        <p className="mb-4 text-sm text-gray-600">Arma un cartel imprimible de la carrera o de cualquiera de sus proyectos, en PDF vectorial a tamaño real. Todo ocurre en tu navegador.</p>
+        <p className="mb-4 text-sm text-gray-600">Arma un cartel imprimible de la carrera o de cualquiera de sus proyectos, en PDF vectorial a tamaño real. Todo ocurre en tu navegador. <Link href="/portal/tutoriales?v=rollup" className="font-semibold text-blue-600 hover:underline">▶ Ver el video tutorial</Link></p>
         {saveWarning}
         {loadError && <p className="mt-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{loadError}</p>}
 
