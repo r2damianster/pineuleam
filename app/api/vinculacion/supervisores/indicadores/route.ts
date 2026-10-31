@@ -108,7 +108,13 @@ export async function GET() {
         GROUP BY ie.espacio_id
       ) gan ON gan.espacio_id = e.id
       WHERE u.rol = 'estudiante'
-        AND (${esLider}::boolean IS TRUE OR e.profesor_id = ${usuarioIdNum})
+        AND (${esLider}::boolean IS TRUE
+             -- Mis supervisados (titular en un espacio mío), en el espacio donde estén; los de apoyo en mis
+             -- espacios no son míos y no aparecen.
+             OR EXISTS (
+               SELECT 1 FROM espacio_instructores eit
+               JOIN "espacios_enseñanza" est ON est.id = eit.espacio_id AND est.area = 'vinculacion'
+               WHERE eit.usuario_id = u.id AND eit.tipo = 'titular' AND est.profesor_id = ${usuarioIdNum}))
       ORDER BY u.apellidos ASC, u.nombres ASC
     `;
 
@@ -186,7 +192,7 @@ export async function GET() {
       WHERE ev.no_aplica = false AND ev.observacion IS NOT NULL AND ev.observacion <> ''
         AND (${esLider}::boolean IS TRUE OR EXISTS (
           SELECT 1 FROM espacio_instructores ei JOIN "espacios_enseñanza" e ON e.id = ei.espacio_id
-          WHERE ei.usuario_id = ev.instructor_id AND e.area = 'vinculacion' AND e.profesor_id = ${usuarioIdNum}))
+          WHERE ei.usuario_id = ev.instructor_id AND ei.tipo = 'titular' AND e.area = 'vinculacion' AND e.profesor_id = ${usuarioIdNum}))
       ORDER BY es.fecha DESC
       LIMIT 100
     `;

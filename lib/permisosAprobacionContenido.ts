@@ -25,12 +25,13 @@ interface FilaAprobableActividad {
   profesores_responsables?: (number | string)[] | null;
 }
 
-/** Supervisor de un pasante = profesor_id de los espacios de Vinculación donde ese pasante es instructor. */
+/** Supervisor de un pasante = profesor_id del espacio de Vinculación donde ese pasante es titular
+ *  (en los espacios donde está de apoyo, el dueño solo confirma asistencia, no lo supervisa). */
 async function esSupervisorDePasante(sql: any, supervisorId: number, pasanteId: number): Promise<boolean> {
   const filas = await sql`
     SELECT 1 FROM espacio_instructores ei
     JOIN "espacios_enseñanza" e ON e.id = ei.espacio_id
-    WHERE ei.usuario_id = ${pasanteId} AND e.area = 'vinculacion' AND e.profesor_id = ${supervisorId}
+    WHERE ei.usuario_id = ${pasanteId} AND ei.tipo = 'titular' AND e.area = 'vinculacion' AND e.profesor_id = ${supervisorId}
     LIMIT 1
   `;
   return filas.length > 0;

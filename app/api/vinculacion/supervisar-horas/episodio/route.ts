@@ -34,14 +34,15 @@ export async function GET(request: Request) {
       LIMIT ${videoIdParam ? 1 : 60}
     `;
 
-    // Pasantes asignables: los de mis espacios (el líder/superadmin, todos los de Vinculación).
+    // Pasantes asignables: los que superviso oficialmente (titulares de mis espacios; los de apoyo
+    // son de otro supervisor). El líder/superadmin, todos los de Vinculación.
     const pasantes = await sql`
       SELECT DISTINCT u.id, u.nombres, u.apellidos
       FROM usuarios u
       JOIN espacio_instructores ei ON ei.usuario_id = u.id
       JOIN "espacios_enseñanza" e ON e.id = ei.espacio_id
       WHERE u.rol = 'estudiante' AND e.area = 'vinculacion'
-        AND (${esLider}::boolean IS TRUE OR e.profesor_id = ${supervisorId})
+        AND (${esLider}::boolean IS TRUE OR (ei.tipo = 'titular' AND e.profesor_id = ${supervisorId}))
       ORDER BY u.nombres, u.apellidos
     `;
 
@@ -76,7 +77,8 @@ export async function PUT(request: Request) {
     const esLider = esSuperAdminOLider(usuario);
     const supervisorId = Number(usuario.id);
 
-    // Cada pasante asignado (o retirado) debe ser un pasante de Vinculación que este supervisor supervisa.
+    // Cada pasante asignado (o retirado) debe ser un pasante de Vinculación que este supervisor supervisa
+    // como titular (el dueño de un espacio donde solo hay pasantes de apoyo no es su supervisor).
     const previos: number[] = (video.participantes_estudiantes || []).map(Number);
     const involucrados = Array.from(new Set([...participantes, ...previos]));
     if (involucrados.length > 0) {
@@ -85,7 +87,7 @@ export async function PUT(request: Request) {
         JOIN espacio_instructores ei ON ei.usuario_id = u.id
         JOIN "espacios_enseñanza" e ON e.id = ei.espacio_id
         WHERE u.id = ANY(${involucrados}) AND u.rol = 'estudiante' AND e.area = 'vinculacion'
-          AND (${esLider}::boolean IS TRUE OR e.profesor_id = ${supervisorId})
+          AND (${esLider}::boolean IS TRUE OR (ei.tipo = 'titular' AND e.profesor_id = ${supervisorId}))
       `;
       const idsValidos = new Set(validos.map((fila: any) => Number(fila.id)));
       const noPermitidos = participantes.filter(id => !idsValidos.has(id));

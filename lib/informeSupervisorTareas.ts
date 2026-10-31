@@ -286,10 +286,12 @@ export async function datosInformeSupervisor(
     ? entidadesFilas.map((fila: any) => fila.nombre).join('; ')
     : (proyecto?.entidad_beneficiaria || '');
 
+  // Pasantes asignados = los que este supervisor supervisa oficialmente (titulares); los de apoyo
+  // hacen horas en sus espacios pero son de otro supervisor.
   const pasantes = await sql`
     SELECT DISTINCT u.id, u.nombres, u.apellidos
     FROM espacio_instructores ei JOIN usuarios u ON ei.usuario_id = u.id
-    WHERE ei.espacio_id = ANY(${idsConsulta})
+    WHERE ei.espacio_id = ANY(${idsConsulta}) AND ei.tipo = 'titular'
     ORDER BY u.apellidos, u.nombres
   `;
   const pasantesAsignadosTotal = pasantes.length;

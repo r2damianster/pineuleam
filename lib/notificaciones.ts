@@ -57,7 +57,14 @@ const REGLAS_NOTIFICACION: ReglaNotificacion[] = [
         JOIN "espacios_enseñanza" e ON e.id = ae.espacio_id
         WHERE e.area = 'vinculacion'
           AND ae.estado_aprobacion = 'pendiente'
-          AND (${veTodo}::boolean IS TRUE OR e.profesor_id = ${profesorId})
+          AND (${veTodo}::boolean IS TRUE OR e.profesor_id = ${profesorId}
+               -- Igual que GET /api/vinculacion/supervisar-asistencia: también las sesiones de un espacio ajeno
+               -- donde asistió un pasante del que soy supervisor titular.
+               OR EXISTS (
+                 SELECT 1 FROM asistencia_instructores aiv
+                 JOIN espacio_instructores eit ON eit.usuario_id = aiv.usuario_id AND eit.tipo = 'titular'
+                 JOIN "espacios_enseñanza" est ON est.id = eit.espacio_id AND est.area = 'vinculacion' AND est.profesor_id = ${profesorId}
+                 WHERE aiv.asistencia_id = ae.id))
       `;
       const total = Number(fila?.total || 0);
       if (total === 0) return null;
@@ -72,7 +79,7 @@ const REGLAS_NOTIFICACION: ReglaNotificacion[] = [
   },
   {
     // Supervisor de Vinculación: horas de podcast e investigación de sus pasantes por aprobar.
-    // Misma visibilidad que GET /api/vinculacion/supervisar-horas.
+    // Misma visibilidad que GET /api/vinculacion/supervisar-horas: solo pasantes de los que soy supervisor titular.
     id: 'horas-por-aprobar',
     aplica: (sesion) => puedeSupervisarVinculacion(sesion),
     consultar: async (sql, sesion) => {
@@ -83,15 +90,15 @@ const REGLAS_NOTIFICACION: ReglaNotificacion[] = [
           (SELECT COUNT(*) FROM horas_podcast_pasante h WHERE h.estado_aprobacion = 'pendiente'
              AND (${veTodo}::boolean IS TRUE OR EXISTS (
                SELECT 1 FROM espacio_instructores ei JOIN "espacios_enseñanza" e ON e.id = ei.espacio_id
-               WHERE ei.usuario_id = h.usuario_id AND e.area = 'vinculacion' AND e.profesor_id = ${profesorId}))) AS podcast,
+               WHERE ei.usuario_id = h.usuario_id AND ei.tipo = 'titular' AND e.area = 'vinculacion' AND e.profesor_id = ${profesorId}))) AS podcast,
           (SELECT COUNT(*) FROM actividades_investigacion_pasante a WHERE a.estado_aprobacion = 'pendiente'
              AND (${veTodo}::boolean IS TRUE OR EXISTS (
                SELECT 1 FROM espacio_instructores ei JOIN "espacios_enseñanza" e ON e.id = ei.espacio_id
-               WHERE ei.usuario_id = a.usuario_id AND e.area = 'vinculacion' AND e.profesor_id = ${profesorId}))) AS investigacion,
+               WHERE ei.usuario_id = a.usuario_id AND ei.tipo = 'titular' AND e.area = 'vinculacion' AND e.profesor_id = ${profesorId}))) AS investigacion,
           (SELECT COUNT(*) FROM actividades_autonomas_pasante a WHERE a.estado_aprobacion = 'pendiente'
              AND (${veTodo}::boolean IS TRUE OR EXISTS (
                SELECT 1 FROM espacio_instructores ei JOIN "espacios_enseñanza" e ON e.id = ei.espacio_id
-               WHERE ei.usuario_id = a.usuario_id AND e.area = 'vinculacion' AND e.profesor_id = ${profesorId}))) AS autonomas
+               WHERE ei.usuario_id = a.usuario_id AND ei.tipo = 'titular' AND e.area = 'vinculacion' AND e.profesor_id = ${profesorId}))) AS autonomas
       `;
       const conteos = { podcast: Number(fila?.podcast || 0), investigacion: Number(fila?.investigacion || 0), autonomas: Number(fila?.autonomas || 0) };
       const total = conteos.podcast + conteos.investigacion + conteos.autonomas;
