@@ -4,7 +4,7 @@
 
 import { paragraph, wrapText, measureText, fitTextSize } from './text';
 import { qrPathFromMatrix } from './qr';
-import type { PosterBlock, PosterContent, PosterElement, PosterFonts, PosterImage, PosterTheme } from './types';
+import type { PosterBlock, PosterContent, PosterDensity, PosterElement, PosterFonts, PosterImage, PosterTheme } from './types';
 
 export interface BlockContext {
   fonts: PosterFonts;
@@ -14,9 +14,17 @@ export interface BlockContext {
   logos: PosterImage[];
   qrMatrix: boolean[][] | null;
   designWidth: number;
+  density: PosterDensity;
   /** Cabecera baja para formato apaisado. */
   compact?: boolean;
 }
+
+// Cuánta imagen lleva el cartel según la preferencia: foto de portada (alto relativo al ancho) y fotos de galería.
+export const DENSITY_SETTINGS: Record<PosterDensity, { heroRatio: number; galleryPhotos: number }> = {
+  texto: { heroRatio: 0.5, galleryPhotos: 2 },
+  equilibrado: { heroRatio: 0.72, galleryPhotos: 4 },
+  imagenes: { heroRatio: 1.0, galleryPhotos: 6 },
+};
 
 const MARGIN = 72;
 const NO_WRAP = 1e7;
@@ -89,7 +97,8 @@ function buildHeader(context: BlockContext): PosterBlock {
 
   const naturalBodyBottom = cursor + 84;
   const hasPhoto = photos.length > 0;
-  const bodyBottom = hasPhoto ? Math.max(naturalBodyBottom, Math.round(width * (compact ? 0.2 : 0.78))) : naturalBodyBottom;
+  const heroRatio = DENSITY_SETTINGS[context.density].heroRatio;
+  const bodyBottom = hasPhoto ? Math.max(naturalBodyBottom, Math.round(width * (compact ? 0.2 : heroRatio))) : naturalBodyBottom;
   const extraTop = (bodyBottom - naturalBodyBottom) / 2;
   const height = bodyBottom + chevronDepth + shadowOffset;
 
@@ -176,7 +185,7 @@ function galleryCells(count: number, totalWidth: number, gap: number): { cells: 
 function buildGallery(context: BlockContext): PosterBlock | null {
   const { photos, designWidth: width } = context;
   // La primera foto del carrete es la de portada de la cabecera; la galería usa las demás.
-  const galleryPhotos = photos.slice(1, 7);
+  const galleryPhotos = photos.slice(1, 1 + DENSITY_SETTINGS[context.density].galleryPhotos);
   if (galleryPhotos.length === 0) return null;
   const totalWidth = width - MARGIN * 2;
   const { cells, height } = galleryCells(galleryPhotos.length, totalWidth, 18);
@@ -186,6 +195,76 @@ function buildGallery(context: BlockContext): PosterBlock | null {
     return { kind: 'image', href: photo.href, x, y: cell.y, width: cell.width, height: cell.height, fit: 'slice', clipPathData: roundedRectPath(x, cell.y, cell.width, cell.height, 22) } as PosterElement;
   });
   return { id: 'gallery', height, elements };
+}
+
+
+// ── Objetivos del proyecto: general destacado + específicos con viñeta ──
+function buildObjectives(context: BlockContext): PosterBlock | null {
+  const { fonts, theme, content, designWidth: width } = context;
+  const objectives = content.objectives.filter((objective) => objective.text.trim());
+  if (objectives.length === 0) return null;
+  const contentWidth = width - MARGIN * 2;
+  const elements: PosterElement[] = [];
+  let cursor = 0;
+
+  if (content.objectivesTitle) {
+    const title = paragraph(fonts.sansBold, content.objectivesTitle, { x: MARGIN, top: cursor, size: 34, fill: theme.primary, maxWidth: contentWidth, tracking: 4, uppercase: true });
+    elements.push(...title.elements);
+    cursor += title.height + 14;
+    elements.push({ kind: 'rect', x: MARGIN, y: cursor, width: 130, height: 7, radius: 3, fill: theme.accent });
+    cursor += 7 + 34;
+  }
+
+  const generalObjectives = objectives.filter((objective) => objective.tipo === 'general');
+  const specificObjectives = objectives.filter((objective) => objective.tipo !== 'general');
+
+  generalObjectives.forEach((objective) => {
+    const label = paragraph(fonts.sansBold, 'Objetivo general', { x: MARGIN, top: cursor, size: 26, fill: theme.accent, maxWidth: contentWidth, tracking: 3, uppercase: true });
+    const text = paragraph(fonts.serif, objective.text, { x: MARGIN, top: cursor + label.height + 8, size: 38, fill: theme.ink, maxWidth: contentWidth, lineHeight: 1.45 });
+    elements.push(...label.elements, ...text.elements);
+    cursor += label.height + 8 + text.height + 36;
+  });
+
+  if (specificObjectives.length > 0) {
+    const label = paragraph(fonts.sansBold, specificObjectives.length > 1 ? 'Objetivos específicos' : 'Objetivo específico', { x: MARGIN, top: cursor, size: 26, fill: theme.accent, maxWidth: contentWidth, tracking: 3, uppercase: true });
+    elements.push(...label.elements);
+    cursor += label.height + 14;
+    specificObjectives.forEach((objective) => {
+      const text = paragraph(fonts.sans, objective.text, { x: MARGIN + 44, top: cursor, size: 33, fill: theme.ink, maxWidth: contentWidth - 44, lineHeight: 1.4 });
+      elements.push({ kind: 'rect', x: MARGIN + 4, y: cursor + 17, width: 16, height: 16, radius: 4, fill: theme.accent });
+      elements.push(...text.elements);
+      cursor += text.height + 24;
+    });
+    cursor -= 24;
+  } else {
+    cursor -= 36;
+  }
+  return { id: 'objectives', height: Math.max(cursor, 0), elements };
+}
+
+// ── Ficha del proyecto: pares etiqueta / valor (unidad académica, ODS, zona, vigencia…) ──
+function buildDetails(context: BlockContext): PosterBlock | null {
+  const { fonts, theme, content, designWidth: width } = context;
+  const details = content.details.filter((detail) => detail.value.trim());
+  if (details.length === 0) return null;
+  const contentWidth = width - MARGIN * 2;
+  const labelWidth = Math.min(380, contentWidth * 0.34);
+  const elements: PosterElement[] = [];
+  let cursor = 40;
+
+  if (content.detailsTitle) {
+    const title = paragraph(fonts.sansBold, content.detailsTitle, { x: MARGIN + 30, top: cursor, size: 30, fill: theme.accent, maxWidth: contentWidth - 60, tracking: 5, uppercase: true });
+    elements.push(...title.elements);
+    cursor += title.height + 22;
+  }
+  details.forEach((detail) => {
+    const label = paragraph(fonts.sansBold, detail.label, { x: MARGIN + 30, top: cursor, size: 24, fill: theme.muted, maxWidth: labelWidth - 20, tracking: 2, uppercase: true, lineHeight: 1.3 });
+    const value = paragraph(fonts.sans, detail.value, { x: MARGIN + 30 + labelWidth, top: cursor - 2, size: 32, fill: theme.ink, maxWidth: contentWidth - 60 - labelWidth, lineHeight: 1.3 });
+    elements.push(...label.elements, ...value.elements);
+    cursor += Math.max(label.height, value.height) + 20;
+  });
+  const height = cursor + 20;
+  return { id: 'details', height, elements: [{ kind: 'rect', x: MARGIN, y: 0, width: contentWidth, height, radius: 22, fill: theme.tint }, ...elements] };
 }
 
 // ── Equipo: banda con responsable y miembros ──
@@ -309,14 +388,17 @@ function buildFooter(context: BlockContext): PosterBlock {
   return { id: 'footer', height: totalHeight, elements };
 }
 
-export type BlockMap = Record<'header' | 'description' | 'gallery' | 'items' | 'team' | 'stats' | 'footer', PosterBlock | null>;
+export type BlockId = 'header' | 'description' | 'gallery' | 'objectives' | 'items' | 'details' | 'team' | 'stats' | 'footer';
+export type BlockMap = Record<BlockId, PosterBlock | null>;
 
 export function buildBlocks(context: BlockContext): BlockMap {
   return {
     header: buildHeader(context),
     description: buildDescription(context),
     gallery: buildGallery(context),
+    objectives: buildObjectives(context),
     items: buildItems(context),
+    details: buildDetails(context),
     team: buildTeam(context),
     stats: buildStats(context),
     footer: buildFooter(context),

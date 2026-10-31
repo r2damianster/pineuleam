@@ -3,11 +3,21 @@
 // cuanto más ancho) hasta que el contenido cabe en la relación de aspecto pedida; si no cabe,
 // descarta bloques opcionales en orden. Funciona con cualquier medida.
 
-import { buildBlocks, type BlockContext, type BlockMap } from './blocks';
-import type { Composition, PlacedBlock, PosterBlock } from './types';
+import { buildBlocks, type BlockContext, type BlockId, type BlockMap } from './blocks';
+import type { Composition, PlacedBlock, PosterBlock, PosterDensity } from './types';
 
-const DISPLAY_ORDER = ['header', 'description', 'gallery', 'items', 'team', 'stats', 'footer'] as const;
-const DROP_ORDER = ['stats', 'team', 'items'] as const;
+// Orden de aparición y orden en que se descartan bloques cuando el contenido no cabe, según la densidad elegida:
+// con más texto se sacrifican primero las imágenes; con más imágenes, los textos secundarios.
+const DISPLAY_ORDER_BY_DENSITY: Record<PosterDensity, BlockId[]> = {
+  texto: ['header', 'description', 'objectives', 'items', 'details', 'team', 'stats', 'gallery', 'footer'],
+  equilibrado: ['header', 'description', 'gallery', 'objectives', 'items', 'details', 'team', 'stats', 'footer'],
+  imagenes: ['header', 'gallery', 'description', 'stats', 'team', 'items', 'objectives', 'details', 'footer'],
+};
+const DROP_ORDER_BY_DENSITY: Record<PosterDensity, BlockId[]> = {
+  texto: ['gallery', 'stats', 'team', 'details'],
+  equilibrado: ['stats', 'details', 'team', 'items', 'objectives'],
+  imagenes: ['stats', 'details', 'objectives', 'items', 'team'],
+};
 const DESIGN_WIDTHS = [1000, 1080, 1160, 1240, 1340, 1460, 1600, 1760, 1960, 2200, 2500];
 const MIN_GAP = 56;
 const MAX_GAP = 120;
@@ -15,12 +25,14 @@ const MAX_GAP = 120;
 type ContextWithoutWidth = Omit<BlockContext, 'designWidth' | 'compact'>;
 
 function composeVertical(baseContext: ContextWithoutWidth, aspectRatio: number): Composition {
-  for (let droppedCount = 0; droppedCount <= DROP_ORDER.length; droppedCount++) {
-    const droppedIds: string[] = DROP_ORDER.slice(0, droppedCount) as unknown as string[];
+  const displayOrder = DISPLAY_ORDER_BY_DENSITY[baseContext.density];
+  const dropOrder = DROP_ORDER_BY_DENSITY[baseContext.density];
+  for (let droppedCount = 0; droppedCount <= dropOrder.length; droppedCount++) {
+    const droppedIds: string[] = dropOrder.slice(0, droppedCount);
     for (const designWidth of DESIGN_WIDTHS) {
       const designHeight = designWidth * aspectRatio;
       const blocks: BlockMap = buildBlocks({ ...baseContext, designWidth });
-      const shown = DISPLAY_ORDER
+      const shown = displayOrder
         .filter((id) => !droppedIds.includes(id))
         .map((id) => blocks[id])
         .filter((block): block is PosterBlock => Boolean(block));
@@ -56,7 +68,7 @@ function composeVertical(baseContext: ContextWithoutWidth, aspectRatio: number):
     placed.push({ ...block, x: 0, y });
     cursorY = y + block.height + MIN_GAP;
   });
-  return { designWidth, designHeight, placed, dropped: [...DROP_ORDER], overflow: true };
+  return { designWidth, designHeight, placed, dropped: [...dropOrder], overflow: true };
 }
 
 // ── Apaisado: cabecera ancha, 3 columnas, pie ancho ──
@@ -78,9 +90,9 @@ function composeLandscape(baseContext: ContextWithoutWidth, aspectRatio: number)
       const wide = buildBlocks({ ...baseContext, designWidth, compact: true });
       const narrow = buildBlocks({ ...baseContext, designWidth: columnWidth + COLUMN_MARGIN * 2, compact: true });
       const columns = [
-        stackColumn([narrow.description, narrow.items]),
-        stackColumn([narrow.gallery]),
-        stackColumn([narrow.team, includeStats ? narrow.stats : null]),
+        stackColumn([narrow.description, narrow.objectives]),
+        stackColumn([narrow.gallery, narrow.details]),
+        stackColumn([narrow.items, narrow.team, includeStats ? narrow.stats : null]),
       ];
       const bodyHeight = Math.max(...columns.map((column) => column.height));
       const headerHeight = wide.header?.height ?? 0;
@@ -110,7 +122,7 @@ function composeLandscape(baseContext: ContextWithoutWidth, aspectRatio: number)
   const placed: PlacedBlock[] = [];
   if (wide.header) placed.push({ ...wide.header, x: 0, y: 0 });
   if (wide.footer) placed.push({ ...wide.footer, x: 0, y: designHeight - wide.footer.height });
-  return { designWidth, designHeight, placed, dropped: ['description', 'gallery', 'items', 'team', 'stats'], overflow: true };
+  return { designWidth, designHeight, placed, dropped: ['description', 'gallery', 'objectives', 'items', 'details', 'team', 'stats'], overflow: true };
 }
 
 export function composeForSize(baseContext: ContextWithoutWidth, widthCm: number, heightCm: number): Composition {

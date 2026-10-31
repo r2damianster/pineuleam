@@ -51,6 +51,9 @@ export interface PosterTheme {
   tint: string;
 }
 
+/** Cuánto pesa el texto frente a las imágenes en la composición. */
+export type PosterDensity = 'texto' | 'equilibrado' | 'imagenes';
+
 export interface PosterContent {
   kicker: string;
   title: string;
@@ -59,6 +62,11 @@ export interface PosterContent {
   itemsTitle: string;
   items: string[];
   stats: { n: string; l: string }[];
+  objectivesTitle: string;
+  /** tipo 'general' se rotula «Objetivo general»; los demás van como lista de específicos. */
+  objectives: { tipo: string; text: string }[];
+  detailsTitle: string;
+  details: { label: string; value: string }[];
   teamTitle: string;
   leader: string;
   team: string[];

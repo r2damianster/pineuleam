@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getAppSessionFromCookies } from '@/lib/session';
 import { esDocente } from '@/lib/modulos';
+import { obtenerDatosRollup } from '@/lib/rollupDatos';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,7 @@ export async function GET() {
 
     const sql = neon(process.env.DATABASE_URL!);
     const proyectos = await sql`
-      SELECT id, slug, nombre_oficial, nav_label, es_red, lider_nombre,
-             hero_subtitle_es, hero_description_es, info_text_es, integration_text_es
-      FROM proyectos
+      SELECT * FROM proyectos
       WHERE activo = true
       ORDER BY "order" ASC, nombre_oficial ASC
     `;
@@ -29,12 +28,19 @@ export async function GET() {
       WHERE activo = true
       ORDER BY "order" ASC
     `;
-    const resultado = proyectos.map((proyecto: any) => ({
-      ...proyecto,
+    const resultado = await Promise.all(proyectos.map(async (proyecto: any) => ({
+      id: proyecto.id,
+      slug: proyecto.slug,
+      nombre_oficial: proyecto.nombre_oficial,
+      lider_nombre: proyecto.lider_nombre,
+      hero_subtitle_es: proyecto.hero_subtitle_es,
+      hero_description_es: proyecto.hero_description_es,
+      info_text_es: proyecto.info_text_es,
+      ...(await obtenerDatosRollup(sql, proyecto)),
       equipo: miembros
         .filter((miembro: any) => Array.isArray(miembro.projects) && miembro.projects.includes(proyecto.id))
         .map((miembro: any) => ({ name: miembro.name, role: miembro.role, is_leader: miembro.is_leader })),
-    }));
+    })));
     return NextResponse.json(resultado);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
