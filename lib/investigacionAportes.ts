@@ -124,10 +124,20 @@ export async function calcularAvanceMetas(sql: any, proyectoId: string, cicloId:
   const [metaPersonas] = cicloId
     ? await sql`SELECT meta_docentes, meta_estudiantes FROM proyecto_metas_ciclo WHERE proyecto_id = ${proyectoId} AND ciclo_id = ${cicloId}`
     : [undefined];
+  // Docentes = aportantes tipo docente ∪ docentes del equipo (proyecto_miembros), sin duplicar personas:
+  // un líder/colíder/participante docente cuenta aunque nadie lo haya registrado además como aportante.
   const [conteoPersonas] = await sql`
-    SELECT COUNT(*) FILTER (WHERE tipo = 'docente')::int AS docentes,
-           COUNT(*) FILTER (WHERE tipo = 'estudiante_apoyo')::int AS estudiantes
-    FROM investigacion_aportantes WHERE proyecto_id = ${proyectoId} AND activo = true
+    SELECT
+      (SELECT COUNT(DISTINCT usuario_id)::int FROM (
+         SELECT usuario_id FROM investigacion_aportantes
+         WHERE proyecto_id = ${proyectoId} AND activo = true AND tipo = 'docente'
+         UNION
+         SELECT pm.usuario_id FROM proyecto_miembros pm JOIN usuarios u ON u.id = pm.usuario_id
+         WHERE pm.proyecto_id = ${proyectoId} AND pm.activo = true
+           AND pm.rol_en_proyecto IN ('lider', 'colider', 'participante') AND u.rol IN ('profesor', 'admin')
+       ) docentes_proyecto) AS docentes,
+      (SELECT COUNT(*)::int FROM investigacion_aportantes
+         WHERE proyecto_id = ${proyectoId} AND activo = true AND tipo = 'estudiante_apoyo') AS estudiantes
   `;
 
   return {
