@@ -9,7 +9,7 @@ import { buildQrMatrix } from '@/lib/poster/qr';
 import { composeForSize } from '@/lib/poster/compose';
 import { buildSvgElement, exportPdf, exportPng, exportSvg } from '@/lib/poster/render';
 import { POSTER_SIZES, POSTER_THEMES, TEMA_POR_PROYECTO, themeById } from '@/lib/poster/themes';
-import type { Composition, PosterContent, PosterFonts, PosterImage } from '@/lib/poster/types';
+import type { Composition, PosterContent, PosterDensity, PosterFonts, PosterImage } from '@/lib/poster/types';
 
 interface ProyectoRollup extends ProyectoOpcion {
   slug: string;
@@ -18,6 +18,10 @@ interface ProyectoRollup extends ProyectoOpcion {
   hero_description_es: string | null;
   info_text_es: string | null;
   equipo: { name: string; role: string; is_leader: boolean }[];
+  // Datos ya existentes del proyecto: se ofrecen con una casilla, nunca se agregan solos.
+  cifras_disponibles: { key: string; n: string; l: string }[];
+  objetivos: { id: number; tipo: string; texto: string }[];
+  detalles: { key: string; label: string; value: string }[];
 }
 
 interface EditableFields {
@@ -36,6 +40,12 @@ interface EditableFields {
   contact: string;
 }
 
+const MAX_STATS = 5;
+const DENSITY_OPTIONS: { id: PosterDensity; nombre: string; descripcion: string }[] = [
+  { id: 'texto', nombre: 'Más texto', descripcion: 'Portada baja y pocas fotos; prioriza lo escrito' },
+  { id: 'equilibrado', nombre: 'Equilibrado', descripcion: 'Mezcla de texto y fotos' },
+  { id: 'imagenes', nombre: 'Más imágenes', descripcion: 'Portada grande y hasta 6 fotos de galería' },
+];
 const MAX_CARRETE_PHOTOS = 7; // 1 de portada (cabecera) + 6 de galería
 const INITIAL_RANDOM_PHOTOS = 5;
 
@@ -65,7 +75,7 @@ function fieldsFromProject(project: ProyectoRollup): EditableFields {
   const leaderName = project.lider_nombre ?? project.equipo.find((member) => member.is_leader)?.name ?? '';
   const otherMembers = project.equipo.filter((member) => member.name !== leaderName).map((member) => member.name).slice(0, 8);
   return {
-    kicker: 'Universidad Laica Eloy Alfaro de Manabí',
+    kicker: 'Carrera de Pedagogía de los Idiomas Nacionales y Extranjeros',
     title: project.nombre_oficial,
     subtitle: project.hero_subtitle_es ?? '',
     description: truncateAtWord(project.hero_description_es ?? project.info_text_es ?? '', 450),
@@ -77,11 +87,20 @@ function fieldsFromProject(project: ProyectoRollup): EditableFields {
     teamText: otherMembers.join('\n'),
     scanLabel: 'Escanea y conoce más',
     url: `${origin}${RUTA_PUBLICA_POR_PROYECTO[project.id] ?? ''}`,
-    contact: 'Carrera de Pedagogía de los Idiomas Nacionales y Extranjeros\nUniversidad Laica Eloy Alfaro de Manabí',
+    contact: 'Universidad Laica Eloy Alfaro de Manabí',
   };
 }
 
-function contentFromFields(fields: EditableFields): PosterContent {
+interface SelectedProjectData {
+  cifraKeys: string[];
+  objectiveIds: number[];
+  detailKeys: string[];
+}
+
+function contentFromFields(fields: EditableFields, project: ProyectoRollup | null, selected: SelectedProjectData): PosterContent {
+  // Cifras: primero las existentes marcadas con casilla, luego las escritas a mano (aparecen solas al llenarlas).
+  const checkedFigures = (project?.cifras_disponibles ?? []).filter((figure) => selected.cifraKeys.includes(figure.key)).map((figure) => ({ n: figure.n, l: figure.l }));
+  const typedFigures = fields.stats.filter((stat) => stat.n.trim() || stat.l.trim());
   return {
     kicker: fields.kicker,
     title: fields.title || ' ',
@@ -89,7 +108,11 @@ function contentFromFields(fields: EditableFields): PosterContent {
     description: fields.description,
     itemsTitle: fields.itemsTitle,
     items: fields.itemsText.split('\n'),
-    stats: fields.stats,
+    stats: [...checkedFigures, ...typedFigures].slice(0, MAX_STATS),
+    objectivesTitle: 'Objetivos del proyecto',
+    objectives: (project?.objetivos ?? []).filter((objective) => selected.objectiveIds.includes(objective.id)).map((objective) => ({ tipo: objective.tipo, text: objective.texto })),
+    detailsTitle: 'Ficha del proyecto',
+    details: (project?.detalles ?? []).filter((detail) => selected.detailKeys.includes(detail.key)).map((detail) => ({ label: detail.label, value: detail.value })),
     teamTitle: fields.teamTitle,
     leader: fields.leader,
     team: fields.teamText.split(/\n|,/),
@@ -99,7 +122,7 @@ function contentFromFields(fields: EditableFields): PosterContent {
   };
 }
 
-const BLOCK_NAMES: Record<string, string> = { stats: 'Cifras', team: 'Equipo', items: 'Lista numerada', description: 'Descripción', gallery: 'Galería', header: 'Cabecera', footer: 'Pie' };
+const BLOCK_NAMES: Record<string, string> = { objectives: 'Objetivos', details: 'Ficha del proyecto', stats: 'Cifras', team: 'Equipo', items: 'Lista numerada', description: 'Descripción', gallery: 'Galería', header: 'Cabecera', footer: 'Pie' };
 
 export default function RollUpPage() {
   const [projects, setProjects] = useState<ProyectoRollup[]>([]);
@@ -107,6 +130,8 @@ export default function RollUpPage() {
   const [fields, setFields] = useState<EditableFields | null>(null);
   const [themeId, setThemeId] = useState('uleam');
   const [fontPairId, setFontPairId] = useState(FONT_PAIRS[0].id);
+  const [density, setDensity] = useState<PosterDensity>('equilibrado');
+  const [selectedData, setSelectedData] = useState<SelectedProjectData>({ cifraKeys: [], objectiveIds: [], detailKeys: [] });
   const [sizeId, setSizeId] = useState('rollup-85x200');
   const [customWidthCm, setCustomWidthCm] = useState(90);
   const [customHeightCm, setCustomHeightCm] = useState(120);
@@ -133,7 +158,7 @@ export default function RollUpPage() {
   const widthCm = sizeId === 'custom' ? Math.min(300, Math.max(20, customWidthCm)) : selectedSize.widthCm;
   const heightCm = sizeId === 'custom' ? Math.min(400, Math.max(20, customHeightCm)) : selectedSize.heightCm;
   const theme = themeById(themeId);
-  const content = useMemo(() => (fields ? contentFromFields(fields) : null), [fields]);
+  const content = useMemo(() => (fields ? contentFromFields(fields, currentProject, selectedData) : null), [fields, currentProject, selectedData]);
 
   const markDirty = useCallback(() => { setIsDirty(true); setDownloadedFormats([]); }, []);
 
@@ -169,6 +194,7 @@ export default function RollUpPage() {
     if (askConfirmation && isDirty && !window.confirm('Cambiar de proyecto reemplaza lo que ya armaste y NO se puede recuperar (el roll up no se guarda). ¿Continuar?')) return;
     setProjectId(project.id);
     setFields(fieldsFromProject(project));
+    setSelectedData({ cifraKeys: [], objectiveIds: [], detailKeys: [] });
     setThemeId(TEMA_POR_PROYECTO[project.id] ?? 'uleam');
     setIsDirty(false);
     setDownloadedFormats([]);
@@ -221,7 +247,7 @@ export default function RollUpPage() {
     setIsComposing(true);
     const timer = setTimeout(() => {
       try {
-        const nextComposition = composeForSize({ fonts, theme, content, photos: preparedPhotos, logos, qrMatrix }, widthCm, heightCm);
+        const nextComposition = composeForSize({ fonts, theme, content, photos: preparedPhotos, logos, qrMatrix, density }, widthCm, heightCm);
         setComposition(nextComposition);
         const svg = buildSvgElement(nextComposition, theme.paper);
         svg.setAttribute('style', 'display:block;width:100%;height:100%');
@@ -232,7 +258,7 @@ export default function RollUpPage() {
       }
     }, 280);
     return () => clearTimeout(timer);
-  }, [fonts, content, logos, theme, preparedPhotos, qrMatrix, widthCm, heightCm]);
+  }, [fonts, content, logos, theme, preparedPhotos, qrMatrix, density, widthCm, heightCm]);
 
   // ── Edición ──
   const updateField = <K extends keyof EditableFields>(fieldName: K, value: EditableFields[K]) => {
@@ -241,6 +267,15 @@ export default function RollUpPage() {
   };
   const updateStat = (statIndex: number, part: 'n' | 'l', value: string) => {
     setFields((current) => (current ? { ...current, stats: current.stats.map((stat, index) => (index === statIndex ? { ...stat, [part]: value } : stat)) } : current));
+    markDirty();
+  };
+
+  const toggleSelected = (group: keyof SelectedProjectData, value: string | number) => {
+    setSelectedData((current) => {
+      const list = current[group] as (string | number)[];
+      const next = list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
+      return { ...current, [group]: next } as SelectedProjectData;
+    });
     markDirty();
   };
 
@@ -364,6 +399,66 @@ export default function RollUpPage() {
               </div>
             </div>
 
+            <div className="rounded-lg border bg-white p-4 shadow-sm">
+              <p className="text-xs font-bold uppercase text-gray-500">Más texto o más imágenes</p>
+              <div className="mt-1 space-y-2">
+                {DENSITY_OPTIONS.map((option) => (
+                  <label key={option.id} className={`block cursor-pointer rounded border p-2 text-sm ${density === option.id ? 'border-blue-500 bg-blue-50' : 'hover:border-gray-400'}`}>
+                    <input type="radio" name="density" checked={density === option.id} onChange={() => { setDensity(option.id); markDirty(); }} className="mr-2" />
+                    <strong>{option.nombre}</strong>
+                    <span className="block pl-5 text-xs text-gray-500">{option.descripcion}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {currentProject && (currentProject.cifras_disponibles.length > 0 || currentProject.objetivos.length > 0 || currentProject.detalles.length > 0) && (
+              <details className="rounded-lg border bg-white p-4 shadow-sm" open>
+                <summary className="cursor-pointer text-sm font-bold text-gray-800">Datos del proyecto (opcionales)</summary>
+                <p className="mt-2 text-xs text-gray-500">Datos que el sistema ya tiene de este proyecto. Marca los que quieras incluir en el cartel.</p>
+
+                {currentProject.cifras_disponibles.length > 0 && (
+                  <fieldset className="mt-3">
+                    <legend className="text-xs font-bold uppercase text-gray-500">Cifras (máx. {MAX_STATS} en el cartel)</legend>
+                    {currentProject.cifras_disponibles.map((figure) => (
+                      <label key={figure.key} className="mt-1 flex cursor-pointer items-center gap-2 rounded border px-2 py-1 text-sm hover:bg-gray-50">
+                        <input type="checkbox" checked={selectedData.cifraKeys.includes(figure.key)} onChange={() => toggleSelected('cifraKeys', figure.key)} />
+                        <span className="w-16 shrink-0 text-right font-bold text-gray-800">{figure.n}</span>
+                        <span className="text-gray-600">{figure.l}</span>
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
+
+                {currentProject.objetivos.length > 0 && (
+                  <fieldset className="mt-3">
+                    <legend className="text-xs font-bold uppercase text-gray-500">Objetivos</legend>
+                    {currentProject.objetivos.map((objective) => (
+                      <label key={objective.id} className="mt-1 flex cursor-pointer items-start gap-2 rounded border px-2 py-1 text-sm hover:bg-gray-50">
+                        <input type="checkbox" className="mt-1" checked={selectedData.objectiveIds.includes(objective.id)} onChange={() => toggleSelected('objectiveIds', objective.id)} />
+                        <span>
+                          <span className="mr-1 rounded bg-gray-200 px-1 text-[10px] font-bold uppercase text-gray-700">{objective.tipo === 'general' ? 'General' : 'Específico'}</span>
+                          <span className="text-gray-600">{objective.texto.length > 150 ? `${objective.texto.slice(0, 150)}…` : objective.texto}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
+
+                {currentProject.detalles.length > 0 && (
+                  <fieldset className="mt-3">
+                    <legend className="text-xs font-bold uppercase text-gray-500">Ficha del proyecto</legend>
+                    {currentProject.detalles.map((detail) => (
+                      <label key={detail.key} className="mt-1 flex cursor-pointer items-start gap-2 rounded border px-2 py-1 text-sm hover:bg-gray-50">
+                        <input type="checkbox" className="mt-1" checked={selectedData.detailKeys.includes(detail.key)} onChange={() => toggleSelected('detailKeys', detail.key)} />
+                        <span><strong className="text-gray-700">{detail.label}:</strong> <span className="text-gray-600">{detail.value}</span></span>
+                      </label>
+                    ))}
+                  </fieldset>
+                )}
+              </details>
+            )}
+
             {fields && (
               <details className="rounded-lg border bg-white p-4 shadow-sm" open>
                 <summary className="cursor-pointer text-sm font-bold text-gray-800">Textos del cartel</summary>
@@ -375,7 +470,8 @@ export default function RollUpPage() {
                   <TextField label="Título de la lista" value={fields.itemsTitle} onChange={(value) => updateField('itemsTitle', value)} />
                   <TextField label="Lista numerada (una por línea)" value={fields.itemsText} onChange={(value) => updateField('itemsText', value)} multiline rows={4} />
                   <div>
-                    <p className="mb-1 text-xs font-bold uppercase text-gray-500">Cifras (opcional)</p>
+                    <p className="mb-1 text-xs font-bold uppercase text-gray-500">Tus propias cifras</p>
+                    <p className="mb-1 text-xs text-gray-500">Aparecen en el cartel apenas las escribes (sin casilla), después de las marcadas arriba.</p>
                     {fields.stats.map((stat, statIndex) => (
                       <div key={statIndex} className="mb-1 flex gap-1">
                         <input value={stat.n} onChange={(event) => updateStat(statIndex, 'n', event.target.value)} placeholder="160+" className="w-20 rounded border px-2 py-1" />
