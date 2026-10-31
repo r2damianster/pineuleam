@@ -44,7 +44,7 @@ for (const [usuarioIdTexto, proyectoId] of Object.entries(PROYECTO_POR_PASANTE))
 for (const usuarioId of IDS_SOLO_PODCAST) {
   consultas.push(sql`
     INSERT INTO topes_horas_pasante (usuario_id, tope_asistencia, tope_autonomas, tope_investigacion, tope_podcast, meta_total)
-    VALUES (${usuarioId}, 0, 0, ${HORAS}, 96, 96)
+    VALUES (${usuarioId}, 0, 0, ${HORAS}, 96 - ${HORAS}, 96)
     ON CONFLICT (usuario_id) DO UPDATE SET tope_investigacion = GREATEST(COALESCE(topes_horas_pasante.tope_investigacion, 0), ${HORAS})`);
 }
 await sql.transaction(consultas);
