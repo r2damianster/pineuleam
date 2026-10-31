@@ -4,7 +4,7 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 type Lang = 'es' | 'en';
 
-const translations = {
+export const translations = {
   es: {
     nav: {
       home: 'Inicio',

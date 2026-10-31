@@ -16,6 +16,7 @@ export const POSTER_THEMES: PosterTheme[] = [
 
 // Tema sugerido al elegir un proyecto (la persona puede cambiarlo).
 export const TEMA_POR_PROYECTO: Record<string, string> = {
+  carrera: 'uleam',
   internacionalizacion: 'uleam',
   vinculacion: 'vinculacion',
   docencia_innovadora: 'docencia',

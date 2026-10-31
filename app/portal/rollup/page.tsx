@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
-import PhotoPicker, { type CarretePhoto, type ProyectoOpcion } from '@/components/rollup/PhotoPicker';
+import PhotoPicker, { CAREER_PROJECT_ID, type CarretePhoto, type ProyectoOpcion } from '@/components/rollup/PhotoPicker';
+import { translations } from '@/lib/i18n';
 import { FONT_PAIRS, fetchPhotoAsDataUrl, loadFontPair, loadLogo } from '@/lib/poster/assets';
 import { buildQrMatrix } from '@/lib/poster/qr';
 import { composeForSize } from '@/lib/poster/compose';
@@ -22,6 +23,22 @@ interface ProyectoRollup extends ProyectoOpcion {
   cifras_disponibles: { key: string; n: string; l: string }[];
   objetivos: { id: number; tipo: string; texto: string }[];
   detalles: { key: string; label: string; value: string }[];
+  // Valores propios de un proyecto que no sale de la tabla (hoy: el roll up general de la carrera).
+  plantilla?: ProjectTemplate;
+}
+
+interface ProjectTemplate {
+  kicker: string;
+  itemsTitle: string;
+  items: string[];
+  contact: string;
+  urlPath: string;
+  leaderRole: string;
+  teamTitle: string;
+  scanLabel: string;
+  objectivesTitle: string;
+  /** Marca de antemano todos los datos existentes (objetivos, ficha) y las primeras cifras. */
+  preselectAll: boolean;
 }
 
 interface EditableFields {
@@ -70,24 +87,56 @@ function truncateAtWord(text: string, maxLength: number): string {
   return `${cut.slice(0, cut.lastIndexOf(' '))}…`;
 }
 
+// Roll up general de la carrera: los textos oficiales (misión, visión, objetivo general, ficha) ya viven en
+// lib/i18n.tsx para la web pública; se reutilizan aquí en vez de copiarlos.
+function enrichCareerProject(project: ProyectoRollup): ProyectoRollup {
+  const info = translations.es.careerInfo;
+  const degree = info.datasheet.find((item) => item.label === 'Título que otorga')?.value ?? null;
+  return {
+    ...project,
+    lider_nombre: info.contact.coordinatorName,
+    hero_subtitle_es: degree,
+    hero_description_es: info.occupational.text,
+    objetivos: [
+      { id: -1, tipo: 'mision', texto: info.mision.text },
+      { id: -2, tipo: 'vision', texto: info.vision.text },
+      { id: -3, tipo: 'general', texto: info.objective },
+    ],
+    detalles: info.datasheet.map((item, index) => ({ key: `datos_${index}`, label: item.label, value: item.value })),
+    plantilla: {
+      kicker: 'Facultad de Educación, Turismo, Artes y Humanidades',
+      itemsTitle: info.graduation.modalitiesTitle,
+      items: info.graduation.modalities,
+      contact: `${info.contact.scheduleLabel} ${info.contact.schedule}`,
+      urlPath: '/',
+      leaderRole: info.contact.coordinatorRole,
+      teamTitle: 'Coordinación',
+      scanLabel: 'Escanea y conoce la carrera',
+      objectivesTitle: 'Quiénes somos',
+      preselectAll: true,
+    },
+  };
+}
+
 function fieldsFromProject(project: ProyectoRollup): EditableFields {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const leaderName = project.lider_nombre ?? project.equipo.find((member) => member.is_leader)?.name ?? '';
   const otherMembers = project.equipo.filter((member) => member.name !== leaderName).map((member) => member.name).slice(0, 8);
+  const template = project.plantilla;
   return {
-    kicker: 'Carrera de Pedagogía de los Idiomas Nacionales y Extranjeros',
+    kicker: template?.kicker ?? 'Carrera de Pedagogía de los Idiomas Nacionales y Extranjeros',
     title: project.nombre_oficial,
     subtitle: project.hero_subtitle_es ?? '',
-    description: truncateAtWord(project.hero_description_es ?? project.info_text_es ?? '', 450),
-    itemsTitle: 'Líneas de trabajo',
-    itemsText: '',
+    description: truncateAtWord(project.hero_description_es ?? project.info_text_es ?? '', template ? 300 : 450),
+    itemsTitle: template?.itemsTitle ?? 'Líneas de trabajo',
+    itemsText: (template?.items ?? []).join('\n'),
     stats: [{ n: '', l: '' }, { n: '', l: '' }, { n: '', l: '' }, { n: '', l: '' }],
-    teamTitle: 'Equipo',
-    leader: leaderName ? `${leaderName} · Líder del proyecto` : '',
+    teamTitle: template?.teamTitle ?? 'Equipo',
+    leader: leaderName ? `${leaderName} · ${template?.leaderRole ?? 'Líder del proyecto'}` : '',
     teamText: otherMembers.join('\n'),
-    scanLabel: 'Escanea y conoce más',
-    url: `${origin}${RUTA_PUBLICA_POR_PROYECTO[project.id] ?? ''}`,
-    contact: 'Universidad Laica Eloy Alfaro de Manabí',
+    scanLabel: template?.scanLabel ?? 'Escanea y conoce más',
+    url: `${origin}${template?.urlPath ?? RUTA_PUBLICA_POR_PROYECTO[project.id] ?? ''}`,
+    contact: template?.contact ?? 'Universidad Laica Eloy Alfaro de Manabí',
   };
 }
 
@@ -109,7 +158,7 @@ function contentFromFields(fields: EditableFields, project: ProyectoRollup | nul
     itemsTitle: fields.itemsTitle,
     items: fields.itemsText.split('\n'),
     stats: [...checkedFigures, ...typedFigures].slice(0, MAX_STATS),
-    objectivesTitle: 'Objetivos del proyecto',
+    objectivesTitle: project?.plantilla?.objectivesTitle ?? 'Objetivos del proyecto',
     objectives: (project?.objetivos ?? []).filter((objective) => selected.objectiveIds.includes(objective.id)).map((objective) => ({ tipo: objective.tipo, text: objective.texto })),
     detailsTitle: 'Ficha del proyecto',
     details: (project?.detalles ?? []).filter((detail) => selected.detailKeys.includes(detail.key)).map((detail) => ({ label: detail.label, value: detail.value })),
@@ -174,7 +223,12 @@ export default function RollUpPage() {
   useEffect(() => {
     fetch('/api/rollup/proyectos')
       .then((response) => (response.ok ? response.json() : Promise.reject(new Error('No se pudieron cargar los proyectos'))))
-      .then((data: ProyectoRollup[]) => { setProjects(data); if (data.length > 0) selectProject(data[0], data, false); })
+      .then((rawProjects: ProyectoRollup[]) => {
+        const data = rawProjects.map((project) => (project.id === CAREER_PROJECT_ID ? enrichCareerProject(project) : project));
+        setProjects(data);
+        // Por defecto: el roll up general de la carrera (viene primero).
+        if (data.length > 0) selectProject(data[0], data, false);
+      })
       .catch((error) => setLoadError(error.message));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -182,7 +236,9 @@ export default function RollUpPage() {
   const loadRandomPhotos = useCallback(async (id: string) => {
     setIsLoadingPhotos(true);
     try {
-      const response = await fetch(`/api/rollup/fotos?proyecto=${encodeURIComponent(id)}&azar=${INITIAL_RANDOM_PHOTOS}`);
+      // La carrera no es una fila de `proyectos`: sin filtro de proyecto salen fotos de todo el banco.
+      const projectFilter = id === CAREER_PROJECT_ID ? '' : id;
+      const response = await fetch(`/api/rollup/fotos?proyecto=${encodeURIComponent(projectFilter)}&azar=${INITIAL_RANDOM_PHOTOS}`);
       const data = response.ok ? await response.json() : { items: [] };
       setCarrete((data.items ?? []).map((item: any): CarretePhoto => ({ key: `foto-${item.id}`, thumb: item.thumb, url: item.url, titulo: item.titulo, origen: 'proyecto' })));
     } finally {
@@ -194,7 +250,9 @@ export default function RollUpPage() {
     if (askConfirmation && isDirty && !window.confirm('Cambiar de proyecto reemplaza lo que ya armaste y NO se puede recuperar (el roll up no se guarda). ¿Continuar?')) return;
     setProjectId(project.id);
     setFields(fieldsFromProject(project));
-    setSelectedData({ cifraKeys: [], objectiveIds: [], detailKeys: [] });
+    setSelectedData(project.plantilla?.preselectAll
+      ? { cifraKeys: project.cifras_disponibles.slice(0, 4).map((figure) => figure.key), objectiveIds: project.objetivos.map((objective) => objective.id), detailKeys: project.detalles.map((detail) => detail.key) }
+      : { cifraKeys: [], objectiveIds: [], detailKeys: [] });
     setThemeId(TEMA_POR_PROYECTO[project.id] ?? 'uleam');
     setIsDirty(false);
     setDownloadedFormats([]);
@@ -336,24 +394,44 @@ export default function RollUpPage() {
       <main className="mx-auto mt-16 max-w-7xl px-4 py-8">
         <Link href="/portal/dashboard" className="text-xs font-semibold text-blue-600 hover:underline">&larr; Volver al Portal</Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-800">Generador de roll up y pósters</h1>
-        <p className="mb-4 text-sm text-gray-600">Arma un cartel imprimible de cualquier proyecto, en PDF vectorial a tamaño real. Todo ocurre en tu navegador.</p>
+        <p className="mb-4 text-sm text-gray-600">Arma un cartel imprimible de la carrera o de cualquiera de sus proyectos, en PDF vectorial a tamaño real. Todo ocurre en tu navegador.</p>
         {saveWarning}
         {loadError && <p className="mt-3 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700">{loadError}</p>}
+
+        {/* Paso 1: elegir para qué es el roll up (es la decisión que cambia todo lo demás) */}
+        <section className="mt-6 rounded-xl border-2 border-blue-600 bg-blue-50 p-4">
+          <h2 className="text-base font-extrabold text-blue-900"><span className="mr-2 rounded-full bg-blue-600 px-2 py-0.5 text-sm text-white">1</span>¿Qué roll up quieres crear?</h2>
+          <p className="mb-3 mt-1 text-xs text-blue-900/80">Elige primero: el título, las fotos, las cifras y los colores se cargan según tu elección. Cambiar de opción reemplaza lo que ya armaste.</p>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {projects.map((project) => {
+              const isSelected = project.id === projectId;
+              const isCareerOption = project.id === CAREER_PROJECT_ID;
+              const swatch = themeById(TEMA_POR_PROYECTO[project.id] ?? 'uleam');
+              return (
+                <button
+                  key={project.id}
+                  type="button"
+                  onClick={() => selectProject(project, projects, true)}
+                  className={`relative overflow-hidden rounded-lg border-2 bg-white p-3 text-left transition ${isSelected ? 'border-blue-600 ring-2 ring-blue-300 shadow-md' : 'border-gray-200 hover:border-blue-400'}`}
+                >
+                  <span className="absolute inset-y-0 left-0 w-2" style={{ background: swatch.primary }} />
+                  <span className="ml-2 block text-[10px] font-extrabold uppercase tracking-wider" style={{ color: swatch.accent }}>
+                    {isCareerOption ? 'General · por defecto' : 'Proyecto'}
+                  </span>
+                  <span className="ml-2 mt-0.5 block text-sm font-bold leading-snug text-gray-800">{isCareerOption ? 'La Carrera' : project.nombre_oficial}</span>
+                  {isCareerOption && <span className="ml-2 block text-xs text-gray-500">Misión, visión, datos y fotos generales</span>}
+                  {isSelected && <span className="absolute right-2 top-2 rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-bold text-white">✓ Elegido</span>}
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[360px_1fr]">
           {/* ── Panel de opciones ── */}
           <section className="space-y-4">
             <div className="rounded-lg border bg-white p-4 shadow-sm">
-              <label className="text-xs font-bold uppercase text-gray-500">Proyecto</label>
-              <select
-                value={projectId}
-                onChange={(event) => { const next = projects.find((project) => project.id === event.target.value); if (next) selectProject(next, projects, true); }}
-                className="mt-1 w-full rounded border px-2 py-2 text-sm"
-              >
-                {projects.map((project) => <option key={project.id} value={project.id}>{project.nombre_oficial}</option>)}
-              </select>
-
-              <label className="mt-3 block text-xs font-bold uppercase text-gray-500">Medida</label>
+              <label className="block text-xs font-bold uppercase text-gray-500">Medida</label>
               <select value={sizeId} onChange={(event) => { setSizeId(event.target.value); markDirty(); }} className="mt-1 w-full rounded border px-2 py-2 text-sm">
                 {['Roll up', 'Póster vertical', 'Apaisado', 'Personalizada'].map((group) => (
                   <optgroup key={group} label={group}>
@@ -524,7 +602,7 @@ export default function RollUpPage() {
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-sm font-bold text-gray-800">Carrete de fotos <span className="font-normal text-gray-500">({carrete.length}/{MAX_CARRETE_PHOTOS} · la primera es la portada)</span></h2>
                 <div className="flex gap-2">
-                  <button type="button" onClick={handleReshuffle} className="rounded border px-3 py-1 text-xs font-semibold hover:bg-gray-50">🎲 Otras al azar de mi proyecto</button>
+                  <button type="button" onClick={handleReshuffle} className="rounded border px-3 py-1 text-xs font-semibold hover:bg-gray-50">🎲 Otras fotos al azar</button>
                   <button
                     type="button"
                     disabled={carrete.length >= MAX_CARRETE_PHOTOS}
@@ -538,7 +616,7 @@ export default function RollUpPage() {
               {isLoadingPhotos && <p className="text-sm text-gray-500">Buscando fotos del proyecto…</p>}
               {!isLoadingPhotos && carrete.length === 0 && (
                 <p className="rounded border border-dashed p-4 text-sm text-gray-500">
-                  Este proyecto aún no tiene fotos publicadas, así que el carrete está vacío. Usa <strong>+ Agregar fotos</strong> para elegir de otros proyectos, de toda la web o importar las tuyas.
+                  Aquí aún no hay fotos publicadas, así que el carrete está vacío. Usa <strong>+ Agregar fotos</strong> para elegir de otros proyectos, de toda la web o importar las tuyas.
                 </p>
               )}
               <div className="flex gap-3 overflow-x-auto pb-2">

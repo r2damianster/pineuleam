@@ -100,3 +100,26 @@ export async function obtenerDatosRollup(sql: any, proyecto: any): Promise<Datos
 
   return { cifras_disponibles: cifras, objetivos, detalles };
 }
+
+// Cifras generales de toda la carrera (roll up general, no de un proyecto en particular).
+export async function obtenerCifrasCarrera(sql: any): Promise<CifraDisponible[]> {
+  const [proyectos, integrantes, publicaciones, podcast, difusion, beneficiarios] = await Promise.all([
+    safely(sql`SELECT count(*)::int AS total FROM proyectos WHERE activo = true`, [{ total: 0 }]),
+    safely(sql`SELECT count(*)::int AS total FROM members WHERE activo = true`, [{ total: 0 }]),
+    safely(sql`SELECT count(*)::int AS total FROM publications WHERE activo = true`, [{ total: 0 }]),
+    safely(sql`SELECT count(*)::int AS total FROM videos WHERE activo = true AND aprobado_sitio = true`, [{ total: 0 }]),
+    safely(sql`SELECT count(*)::int AS total FROM actividades_difusion WHERE aprobado_sitio = true`, [{ total: 0 }]),
+    safely(sql`SELECT count(DISTINCT i.beneficiario_id)::int AS total FROM inscripciones_espacio i JOIN "espacios_enseñanza" e ON e.id = i.espacio_id WHERE e.area = 'vinculacion'`, [{ total: 0 }]),
+  ]);
+  const cifras: CifraDisponible[] = [];
+  const addCifra = (key: string, value: number | null | undefined, label: string) => {
+    if (value && value > 0) cifras.push({ key, n: formatNumber(value), l: label });
+  };
+  addCifra('c_beneficiarios', beneficiarios[0]?.total, 'Beneficiarios de vinculación');
+  addCifra('c_publicaciones', publicaciones[0]?.total, 'Publicaciones');
+  addCifra('c_podcast', podcast[0]?.total, 'Episodios de podcast');
+  addCifra('c_difusion', difusion[0]?.total, 'Actividades de difusión');
+  addCifra('c_proyectos', proyectos[0]?.total, 'Proyectos del grupo');
+  addCifra('c_integrantes', integrantes[0]?.total, 'Integrantes');
+  return cifras;
+}

@@ -215,11 +215,13 @@ function buildObjectives(context: BlockContext): PosterBlock | null {
     cursor += 7 + 34;
   }
 
-  const generalObjectives = objectives.filter((objective) => objective.tipo === 'general');
-  const specificObjectives = objectives.filter((objective) => objective.tipo !== 'general');
+  // Tipos que se muestran como párrafo rotulado (misión, visión, objetivo general); el resto va como lista de específicos.
+  const LABELED_TYPES: Record<string, string> = { mision: 'Misión', vision: 'Visión', general: 'Objetivo general' };
+  const generalObjectives = objectives.filter((objective) => objective.tipo in LABELED_TYPES);
+  const specificObjectives = objectives.filter((objective) => !(objective.tipo in LABELED_TYPES));
 
   generalObjectives.forEach((objective) => {
-    const label = paragraph(fonts.sansBold, 'Objetivo general', { x: MARGIN, top: cursor, size: 26, fill: theme.accent, maxWidth: contentWidth, tracking: 3, uppercase: true });
+    const label = paragraph(fonts.sansBold, LABELED_TYPES[objective.tipo], { x: MARGIN, top: cursor, size: 26, fill: theme.accent, maxWidth: contentWidth, tracking: 3, uppercase: true });
     const text = paragraph(fonts.serif, objective.text, { x: MARGIN, top: cursor + label.height + 8, size: 38, fill: theme.ink, maxWidth: contentWidth, lineHeight: 1.45 });
     elements.push(...label.elements, ...text.elements);
     cursor += label.height + 8 + text.height + 36;

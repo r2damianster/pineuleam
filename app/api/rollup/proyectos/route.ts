@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { getAppSessionFromCookies } from '@/lib/session';
 import { esDocente } from '@/lib/modulos';
-import { obtenerDatosRollup } from '@/lib/rollupDatos';
+import { obtenerCifrasCarrera, obtenerDatosRollup } from '@/lib/rollupDatos';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +41,21 @@ export async function GET() {
         .filter((miembro: any) => Array.isArray(miembro.projects) && miembro.projects.includes(proyecto.id))
         .map((miembro: any) => ({ name: miembro.name, role: miembro.role, is_leader: miembro.is_leader })),
     })));
+    // Roll up general de la carrera: proyecto virtual (no existe en la tabla). Los textos oficiales
+    // (misión, visión, objetivo general…) los aporta el cliente desde lib/i18n.tsx para no duplicarlos.
+    resultado.unshift({
+      id: 'carrera',
+      slug: 'carrera-pine',
+      nombre_oficial: 'Pedagogía de los Idiomas Nacionales y Extranjeros',
+      lider_nombre: null,
+      hero_subtitle_es: null,
+      hero_description_es: null,
+      info_text_es: null,
+      cifras_disponibles: await obtenerCifrasCarrera(sql),
+      objetivos: [],
+      detalles: [],
+      equipo: [],
+    });
     return NextResponse.json(resultado);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

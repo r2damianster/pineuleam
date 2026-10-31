@@ -36,6 +36,9 @@ const TAB_LABELS: Record<PickerTab, string> = {
 
 const PAGE_SIZE = 24;
 
+/** Roll up general de la carrera: no es un proyecto de la tabla, sus fotos son todo el banco. */
+export const CAREER_PROJECT_ID = 'carrera';
+
 export default function PhotoPicker({ mode, currentProjectId, projects, alreadyUsedKeys, onPick, onClose }: PhotoPickerProps) {
   const [activeTab, setActiveTab] = useState<PickerTab>('proyecto');
   const [otherProjectId, setOtherProjectId] = useState('');
@@ -48,11 +51,13 @@ export default function PhotoPicker({ mode, currentProjectId, projects, alreadyU
   const [pickedCount, setPickedCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isCareer = currentProjectId === CAREER_PROJECT_ID;
+  const visibleTabs = (Object.keys(TAB_LABELS) as PickerTab[]).filter((tab) => !(isCareer && tab === 'banco'));
   const otherProjects = projects.filter((project) => project.id !== currentProjectId);
 
   const loadPhotos = useCallback(async () => {
     if (activeTab === 'importar') return;
-    const projectFilter = activeTab === 'proyecto' ? currentProjectId : activeTab === 'otros' ? otherProjectId : '';
+    const projectFilter = activeTab === 'proyecto' ? (isCareer ? '' : currentProjectId) : activeTab === 'otros' ? otherProjectId : '';
     if (activeTab === 'otros' && !projectFilter) { setPhotos([]); setTotalPhotos(0); return; }
     setIsLoading(true);
     setErrorMessage('');
@@ -72,7 +77,7 @@ export default function PhotoPicker({ mode, currentProjectId, projects, alreadyU
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, currentProjectId, otherProjectId, page, searchText]);
+  }, [activeTab, currentProjectId, isCareer, otherProjectId, page, searchText]);
 
   useEffect(() => { loadPhotos(); }, [loadPhotos]);
 
@@ -105,14 +110,14 @@ export default function PhotoPicker({ mode, currentProjectId, projects, alreadyU
         </div>
 
         <div className="flex flex-wrap gap-1 border-b bg-gray-50 px-3 pt-2">
-          {(Object.keys(TAB_LABELS) as PickerTab[]).map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => handleChangeTab(tab)}
               className={`rounded-t-md px-3 py-2 text-sm font-semibold ${activeTab === tab ? 'bg-white text-blue-700 shadow-[0_-2px_0_0_#1d4ed8_inset]' : 'text-gray-600 hover:text-gray-900'}`}
             >
-              {TAB_LABELS[tab]}
+              {tab === 'proyecto' && isCareer ? 'Fotos de la carrera' : TAB_LABELS[tab]}
             </button>
           ))}
         </div>

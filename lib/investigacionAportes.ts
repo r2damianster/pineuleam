@@ -136,8 +136,18 @@ export async function calcularAvanceMetas(sql: any, proyectoId: string, cicloId:
          WHERE pm.proyecto_id = ${proyectoId} AND pm.activo = true
            AND pm.rol_en_proyecto IN ('lider', 'colider', 'participante') AND u.rol IN ('profesor', 'admin')
        ) docentes_proyecto) AS docentes,
-      (SELECT COUNT(*)::int FROM investigacion_aportantes
-         WHERE proyecto_id = ${proyectoId} AND activo = true AND tipo = 'estudiante_apoyo') AS estudiantes
+      (SELECT COUNT(DISTINCT usuario_id)::int FROM (
+         SELECT usuario_id FROM investigacion_aportantes
+         WHERE proyecto_id = ${proyectoId} AND activo = true AND tipo = 'estudiante_apoyo'
+         UNION
+         -- Pasantes con módulo investigación que reportaron horas en este proyecto (no rechazadas).
+         SELECT a.usuario_id FROM actividades_investigacion_pasante a
+         WHERE a.proyecto_id = ${proyectoId} AND a.estado_aprobacion <> 'rechazado'
+         UNION
+         -- Estudiantes/colaboradores del equipo del proyecto.
+         SELECT pm.usuario_id FROM proyecto_miembros pm JOIN usuarios u ON u.id = pm.usuario_id
+         WHERE pm.proyecto_id = ${proyectoId} AND pm.activo = true AND u.rol IN ('estudiante', 'colaborador')
+       ) estudiantes_proyecto) AS estudiantes
   `;
 
   return {
