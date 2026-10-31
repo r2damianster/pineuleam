@@ -95,6 +95,15 @@ const documents = {
       period: '2026-1',
     },
     {
+      id: 'invitacion-conferencia-unesum-innova-2026',
+      title: 'Invitación — Conferencia magistral UNESUM INNOVA 2026',
+      filename: '2026-10-22_InvitacionConferenciaUNESUMInnova-signed.pdf',
+      description: 'Oficio N.º 019 de la Dirección Académica de la UNESUM (30 de septiembre de 2026) que invita al Dr. Arturo Rodríguez Zambrano como conferencista magistral en el XIX Seminario de Trabajo Científico Metodológico UNESUM INNOVA 2026 (22 de octubre de 2026, 10h30–12h00). Respaldo de la contribución y la noticia correspondientes. Documento firmado.',
+      icon: '🎤',
+      date: '2026-10-22',
+      period: '2026-2',
+    },
+    {
       id: 'proyecto-actualizado-2026',
       title: 'Proyecto de Innovaciones Pedagógicas e Internacionalización (Actualizado 2026)',
       filename: '2026-04-14_ProyectoActualizado.pdf',
