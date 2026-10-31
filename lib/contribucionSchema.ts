@@ -64,7 +64,7 @@ export const contribucionSchema = z.object({
   authors: z.array(
     z.object({
       authorName: z.string(),
-      order: z.number().int().min(1).max(5),
+      order: z.number().int().min(1).max(6),
       isCarreraAuthor: z.boolean(),
       esEstudiante: z.boolean().optional().default(false),
     })

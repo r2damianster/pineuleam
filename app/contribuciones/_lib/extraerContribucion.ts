@@ -30,7 +30,7 @@ const CAMPOS_VACIOS: DatosContribucionExtraidos = {
 function normalizarAutores(nombres: string[]): AutorExtraido[] {
   return nombres
     .filter(nombre => typeof nombre === "string" && nombre.trim().length > 0)
-    .slice(0, 5)
+    .slice(0, 6)
     .map((authorName, index) => ({
       authorName: authorName.trim(),
       order: index + 1,

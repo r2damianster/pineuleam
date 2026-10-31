@@ -358,7 +358,7 @@ export default function ContributionForm({
 
   // El nuevo autor toma el menor número de orden libre (si el docente ya ocupa el 2, no se repite).
   const addAuthor = () => {
-    if (authorFields.length >= 5) return
+    if (authorFields.length >= 6) return
     const ordenesUsados = watch('authors').map(a => Number(a.order))
     let ordenLibre = 1
     while (ordenesUsados.includes(ordenLibre)) ordenLibre++
@@ -756,7 +756,7 @@ export default function ContributionForm({
                   type="number"
                   placeholder="#"
                   min={1}
-                  max={5}
+                  max={6}
                   {...register(`authors.${index}.order` as const, { valueAsNumber: true })}
                   className="border rounded p-1"
                 />
@@ -777,7 +777,7 @@ export default function ContributionForm({
             )
           })}
           {errors.authors && <p className="text-red-600">{(errors.authors as any).message}</p>}
-          {authorFields.length < 5 && (
+          {authorFields.length < 6 && (
             <button type="button" onClick={addAuthor} className="mt-2 px-3 py-1 bg-blue-600 text-white rounded">
               Añadir autor
             </button>

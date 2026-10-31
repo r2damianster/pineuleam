@@ -94,7 +94,7 @@ model ContributionAuthor {
   contributionId   String
   contribution     Contribution @relation(fields: [contributionId], references: [id])
   authorName       String
-  order            Int      // 1..5
+  order            Int      // 1..6
   isCarreraAuthor  Boolean
   esEstudiante     Boolean  @default(false) // solo aplica si isCarreraAuthor=true; docente vs estudiante de la carrera
   usuarioId        Int?     // usuarios.id del docente autor (NULL = externo/estudiante o nombre ambiguo)

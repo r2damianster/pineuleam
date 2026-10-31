@@ -21,7 +21,7 @@ export const TIPO_PUBLICACION_LABEL: Record<TipoPublicacionEnlace, string> = {
   PROPIEDAD_INTELECTUAL: 'Propiedad intelectual',
 };
 
-export const MAX_AUTORES = 5;
+export const MAX_AUTORES = 6;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
