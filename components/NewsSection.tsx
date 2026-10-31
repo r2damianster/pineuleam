@@ -207,6 +207,7 @@ function NewsCard({ news }: { news: News }) {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
+              timeZone: 'UTC',
             })}
           </time>
         </div>
