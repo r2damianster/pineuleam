@@ -269,6 +269,19 @@ export default async function PortalDashboard() {
               </div>
             )}
 
+            {/* Roll up y pósters — cualquier docente */}
+            {esDocente && (
+              <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-orange-500 hover:shadow-lg transition">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">Roll up y pósters</h3>
+                <p className="text-gray-600 mb-4 text-sm">
+                  Arma un cartel imprimible de cualquier proyecto con fotos, QR y tu tipografía favorita. No se guarda: descárgalo.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Link href="/portal/rollup" className="text-orange-600 hover:underline">» Crear roll up</Link>
+                </div>
+              </div>
+            )}
+
             {/* Utilidades — cualquier docente y la secretaria */}
             {(esDocente || esSecretaria) && (
               <div className="bg-white p-6 rounded-xl shadow-md border-t-4 border-teal-500 hover:shadow-lg transition">

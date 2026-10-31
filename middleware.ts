@@ -34,6 +34,7 @@ export async function middleware(request: NextRequest) {
     '/portal/mi-avance',
     '/portal/proyecto',
     '/portal/aprobaciones',
+    '/portal/rollup',
     '/portal/tutoriales',
     '/vinculacion/dinamicas-linguisticas/asistencia',
     '/vinculacion/espacios',
@@ -159,6 +160,11 @@ export async function middleware(request: NextRequest) {
     // Mis aprobaciones (Sesión 53, profesor responsable): solo docentes; el detalle de qué puede
     // aprobar cada uno lo decide la API (profesores_responsables), no esta redirección.
     if (pathname.startsWith('/portal/aprobaciones') && !['profesor', 'admin'].includes(session.rol)) {
+       return NextResponse.redirect(new URL('/portal/dashboard', request.url));
+    }
+
+    // Generador de roll up (todos los docentes): el roll up no se guarda, todo ocurre en el navegador.
+    if (pathname.startsWith('/portal/rollup') && !['profesor', 'admin'].includes(session.rol)) {
        return NextResponse.redirect(new URL('/portal/dashboard', request.url));
     }
 
