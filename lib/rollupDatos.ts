@@ -40,6 +40,31 @@ async function safely<T>(query: Promise<T>, fallback: T): Promise<T> {
   try { return await query; } catch { return fallback; }
 }
 
+// Contribuciones académicas aprobadas (misma fuente y criterio que /contribuciones: solo `aprobada = true`).
+// Con proyectoId se limita a ese proyecto; con null cuenta toda la carrera. Los tipos en 0 no se ofrecen.
+async function cifrasContribuciones(sql: any, proyectoId: string | null): Promise<CifraDisponible[]> {
+  const filas: { tipo: string; total: number }[] = await safely(
+    proyectoId
+      ? sql`SELECT "tipoPublicacion"::text AS tipo, count(*)::int AS total FROM "Contribution" WHERE aprobada = true AND "proyectoId" = ${proyectoId} GROUP BY 1`
+      : sql`SELECT "tipoPublicacion"::text AS tipo, count(*)::int AS total FROM "Contribution" WHERE aprobada = true GROUP BY 1`,
+    [] as any[],
+  );
+  const porTipo = (tipo: string) => filas.find((fila) => fila.tipo === tipo)?.total ?? 0;
+  const total = filas.reduce((suma, fila) => suma + fila.total, 0);
+  const definiciones: [string, number, string, string][] = [
+    ['contrib_total', total, 'Contribuciones académicas', 'Contribución académica'],
+    ['contrib_ponencias', porTipo('MEMORIA_EVENTO'), 'Ponencias en eventos', 'Ponencia en eventos'],
+    ['contrib_regionales', porTipo('ARTICULO_REGIONAL'), 'Artículos regionales', 'Artículo regional'],
+    ['contrib_alto_impacto', porTipo('ARTICULO_ALTO_IMPACTO'), 'Artículos de alto impacto', 'Artículo de alto impacto'],
+    ['contrib_libros', porTipo('LIBRO'), 'Libros', 'Libro'],
+    ['contrib_capitulos', porTipo('CAPITULO_LIBRO'), 'Capítulos de libro', 'Capítulo de libro'],
+    ['contrib_pi', porTipo('PROPIEDAD_INTELECTUAL'), 'Propiedad intelectual', 'Propiedad intelectual'],
+  ];
+  return definiciones
+    .filter(([, valor]) => valor > 0)
+    .map(([key, valor, etiqueta, etiquetaSingular]) => ({ key, n: formatNumber(valor), l: valor === 1 ? etiquetaSingular : etiqueta }));
+}
+
 export async function obtenerDatosRollup(sql: any, proyecto: any): Promise<DatosRollupProyecto> {
   const proyectoId: string = proyecto.id;
   const cifras: CifraDisponible[] = [];
@@ -55,9 +80,10 @@ export async function obtenerDatosRollup(sql: any, proyecto: any): Promise<Datos
     safely(sql`SELECT id, tipo, texto FROM proyecto_objetivos WHERE proyecto_id = ${proyectoId} AND activo = true ORDER BY (tipo = 'general') DESC, orden ASC, id ASC`, [] as any[]),
   ]);
 
-  addCifra('equipo', equipo[0]?.total, 'Integrantes del equipo');
+  addCifra('equipo', equipo[0]?.total, equipo[0]?.total === 1 ? 'Integrante del equipo' : 'Integrantes del equipo');
   addCifra('podcast', podcast[0]?.total, 'Episodios de podcast');
   addCifra('difusion', difusion[0]?.total, 'Actividades de difusión');
+  cifras.push(...(await cifrasContribuciones(sql, proyectoId)));
 
   // Operación de Vinculación: solo el proyecto de Vinculación tiene espacios, asistencia y beneficiarios.
   if (proyectoId === 'vinculacion') {
@@ -102,24 +128,29 @@ export async function obtenerDatosRollup(sql: any, proyecto: any): Promise<Datos
 }
 
 // Cifras generales de toda la carrera (roll up general, no de un proyecto en particular).
+// El orden importa: el roll up de la carrera marca por defecto las primeras 4.
 export async function obtenerCifrasCarrera(sql: any): Promise<CifraDisponible[]> {
-  const [proyectos, integrantes, publicaciones, podcast, difusion, beneficiarios] = await Promise.all([
+  const [proyectos, integrantes, podcast, difusion, beneficiarios, contribuciones] = await Promise.all([
     safely(sql`SELECT count(*)::int AS total FROM proyectos WHERE activo = true`, [{ total: 0 }]),
     safely(sql`SELECT count(*)::int AS total FROM members WHERE activo = true`, [{ total: 0 }]),
-    safely(sql`SELECT count(*)::int AS total FROM publications WHERE activo = true`, [{ total: 0 }]),
     safely(sql`SELECT count(*)::int AS total FROM videos WHERE activo = true AND aprobado_sitio = true`, [{ total: 0 }]),
     safely(sql`SELECT count(*)::int AS total FROM actividades_difusion WHERE aprobado_sitio = true`, [{ total: 0 }]),
     safely(sql`SELECT count(DISTINCT i.beneficiario_id)::int AS total FROM inscripciones_espacio i JOIN "espacios_enseñanza" e ON e.id = i.espacio_id WHERE e.area = 'vinculacion'`, [{ total: 0 }]),
+    cifrasContribuciones(sql, null),
   ]);
-  const cifras: CifraDisponible[] = [];
+  const otras: CifraDisponible[] = [];
   const addCifra = (key: string, value: number | null | undefined, label: string) => {
-    if (value && value > 0) cifras.push({ key, n: formatNumber(value), l: label });
+    if (value && value > 0) otras.push({ key, n: formatNumber(value), l: label });
   };
   addCifra('c_beneficiarios', beneficiarios[0]?.total, 'Beneficiarios de vinculación');
-  addCifra('c_publicaciones', publicaciones[0]?.total, 'Publicaciones');
   addCifra('c_podcast', podcast[0]?.total, 'Episodios de podcast');
   addCifra('c_difusion', difusion[0]?.total, 'Actividades de difusión');
   addCifra('c_proyectos', proyectos[0]?.total, 'Proyectos del grupo');
   addCifra('c_integrantes', integrantes[0]?.total, 'Integrantes');
-  return cifras;
+  // Orden: total de contribuciones, ponencias, beneficiarios, podcast (las 4 por defecto) y luego el resto.
+  const buscar = (lista: CifraDisponible[], key: string) => lista.find((cifra) => cifra.key === key);
+  const principales = [buscar(contribuciones, 'contrib_total'), buscar(contribuciones, 'contrib_ponencias'), buscar(otras, 'c_beneficiarios'), buscar(otras, 'c_podcast')]
+    .filter((cifra): cifra is CifraDisponible => Boolean(cifra));
+  const resto = [...contribuciones, ...otras].filter((cifra) => !principales.includes(cifra));
+  return [...principales, ...resto];
 }
