@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import type { ItemProduccion, TipoProduccion } from '@/lib/produccion';
+import { similitudTexto } from '@/lib/similitudRegistros';
 
 // Producción académica pública: une `Contribution` (fuente de periodo y proyecto) con `publications`
 // (descripción curada, PDF, portada). Nunca expone datos personales (cédula, correo, creador).
@@ -17,6 +18,22 @@ const TIPO_POR_CONTRIBUCION: Record<string, TipoProduccion> = {
 const LARGO_MAXIMO_DESCRIPCION = 220;
 
 const normalizarTitulo = (titulo: string) => titulo.trim().toLowerCase();
+
+const LARGO_MINIMO_PREFIJO = 20;
+const SIMILITUD_MINIMA_TITULOS = 90;
+
+// Misma obra con títulos escritos distinto: igual, casi igual (>= 90 %) o uno es el comienzo del otro.
+function sonMismoTitulo(primero: string, segundo: string): boolean {
+  const normalizadoPrimero = normalizarTitulo(primero);
+  const normalizadoSegundo = normalizarTitulo(segundo);
+  if (normalizadoPrimero === normalizadoSegundo) return true;
+  const [corto, largo] =
+    normalizadoPrimero.length <= normalizadoSegundo.length
+      ? [normalizadoPrimero, normalizadoSegundo]
+      : [normalizadoSegundo, normalizadoPrimero];
+  if (corto.length >= LARGO_MINIMO_PREFIJO && largo.startsWith(corto)) return true;
+  return similitudTexto(primero, segundo) >= SIMILITUD_MINIMA_TITULOS;
+}
 
 // Periodos del proyecto: enero–agosto = N-1, septiembre–diciembre = N-2.
 function periodoDeFecha(fecha: string): string {
@@ -61,7 +78,7 @@ export async function GET() {
       const enlaces = [contribucion.linkPublicacion, contribucion.codigoPublicacion].filter(Boolean);
       const publicacion = publicaciones.find(
         (candidata) =>
-          normalizarTitulo(candidata.title) === normalizarTitulo(contribucion.titulo) ||
+          sonMismoTitulo(candidata.title, contribucion.titulo) ||
           (candidata.doi_link && enlaces.includes(candidata.doi_link)),
       );
       if (publicacion) publicacionesUsadas.add(publicacion.id);
