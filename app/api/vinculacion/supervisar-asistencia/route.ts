@@ -66,7 +66,16 @@ export async function GET(request: Request) {
       JOIN usuarios u ON u.id = ae.registrado_por
       LEFT JOIN usuarios sup ON sup.id = e.profesor_id
       WHERE e.area = 'vinculacion'
-        AND (${supervisorFiltro}::int IS NULL OR e.profesor_id = ${supervisorFiltro}::int)
+        AND (
+          ${supervisorFiltro}::int IS NULL
+          OR e.profesor_id = ${supervisorFiltro}::int
+          -- También ve las sesiones donde asistió un pasante cuyo supervisor titular es él (espacios de otro supervisor).
+          OR EXISTS (
+            SELECT 1 FROM asistencia_instructores aiv
+            JOIN espacio_instructores eit ON eit.usuario_id = aiv.usuario_id AND eit.tipo = 'titular'
+            JOIN "espacios_enseñanza" est ON est.id = eit.espacio_id AND est.area = 'vinculacion' AND est.profesor_id = ${supervisorFiltro}::int
+            WHERE aiv.asistencia_id = ae.id)
+        )
         AND (${periodoId}::text IS NULL OR ae.fecha BETWEEN
              (SELECT fecha_inicio FROM ciclos_academicos WHERE id = ${periodoId}::int)
              AND (SELECT fecha_fin FROM ciclos_academicos WHERE id = ${periodoId}::int))

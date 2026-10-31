@@ -34,7 +34,19 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 
     const esLider = esSuperAdminOLider(usuario);
+    // Además del supervisor del espacio, puede moderar el supervisor titular de cualquier pasante que asistió.
+    let esSupervisorTitularDeAsistente = false;
     if (!esLider && Number(asistenciaActual.profesor_id) !== Number(usuario.id)) {
+      const [titular] = await sql`
+        SELECT 1 FROM asistencia_instructores ai
+        JOIN espacio_instructores ei ON ei.usuario_id = ai.usuario_id AND ei.tipo = 'titular'
+        JOIN "espacios_enseñanza" est ON est.id = ei.espacio_id AND est.area = 'vinculacion' AND est.profesor_id = ${Number(usuario.id)}
+        WHERE ai.asistencia_id = ${id}
+        LIMIT 1
+      `;
+      esSupervisorTitularDeAsistente = !!titular;
+    }
+    if (!esLider && Number(asistenciaActual.profesor_id) !== Number(usuario.id) && !esSupervisorTitularDeAsistente) {
       return NextResponse.json(
         { error: 'No tienes permiso para aprobar o rechazar asistencias de este pasante o espacio.' },
         { status: 403 }
