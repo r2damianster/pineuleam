@@ -10,8 +10,8 @@ type TabKey = 'all' | 'articulo' | 'libro' | 'ponencia' | 'propiedad';
 type ArticleCategoryFilter = 'all' | 'regional' | 'impacto';
 
 const ALL_PERIODS = 'all';
-const SINCE_2026 = 'since2026';
-const SINCE_2026_FIRST_DATE = '2026-01-01';
+const SINCE_2025 = 'since2025';
+const SINCE_2025_FIRST_DATE = '2025-01-01';
 const ALL_PROJECTS = 'all';
 const NO_PROJECT = '__none';
 const TAB_KEYS: TabKey[] = ['all', 'articulo', 'libro', 'ponencia', 'propiedad'];
@@ -24,7 +24,7 @@ const tabOfItem = (item: ItemProduccion): Exclude<TabKey, 'all'> =>
 export default function PublicacionesPage() {
   const [items, setItems] = useState<ItemProduccion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState(SINCE_2026);
+  const [selectedPeriod, setSelectedPeriod] = useState(SINCE_2025);
   const [selectedProject, setSelectedProject] = useState(ALL_PROJECTS);
   const [activeTab, setActiveTab] = useState<TabKey>('all');
   const [articleCategory, setArticleCategory] = useState<ArticleCategoryFilter>('all');
@@ -57,8 +57,8 @@ export default function PublicacionesPage() {
   const filteredByDashboard = useMemo(
     () =>
       items.filter((item) => {
-        if (selectedPeriod === SINCE_2026 && item.fecha < SINCE_2026_FIRST_DATE) return false;
-        if (selectedPeriod !== ALL_PERIODS && selectedPeriod !== SINCE_2026 && item.periodo !== selectedPeriod) return false;
+        if (selectedPeriod === SINCE_2025 && item.fecha < SINCE_2025_FIRST_DATE) return false;
+        if (selectedPeriod !== ALL_PERIODS && selectedPeriod !== SINCE_2025 && item.periodo !== selectedPeriod) return false;
         if (selectedProject === NO_PROJECT) return !item.proyectoId;
         if (selectedProject !== ALL_PROJECTS && item.proyectoId !== selectedProject) return false;
         return true;
@@ -117,7 +117,7 @@ export default function PublicacionesPage() {
                   onChange={(event) => setSelectedPeriod(event.target.value)}
                   className={`${selectClassName} mt-1 font-normal`}
                 >
-                  <option value={SINCE_2026}>{t.publications.since2026}</option>
+                  <option value={SINCE_2025}>{t.publications.since2025}</option>
                   <option value={ALL_PERIODS}>{t.publications.allPeriods}</option>
                   {periodOptions.map((period) => (
                     <option key={period} value={period}>
