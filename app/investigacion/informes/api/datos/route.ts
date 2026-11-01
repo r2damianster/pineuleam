@@ -42,10 +42,11 @@ export async function GET(request: NextRequest) {
       ORDER BY created
     `,
     sql`
-      SELECT id, title, description, category, tags, published_date, created
-      FROM videos
-      WHERE created >= ${desde}::date AND created < (${hasta}::date + INTERVAL '1 day')
-      ORDER BY created
+      SELECT v.id, v.title, v.description, COALESCE(c.name, v.category) AS category, v.tags, v.published_date, v.created
+      FROM videos v
+      LEFT JOIN video_categories c ON c.id = v.category
+      WHERE v.created >= ${desde}::date AND v.created < (${hasta}::date + INTERVAL '1 day')
+      ORDER BY v.created
     `,
     // Actividades de investigación de pasantes de Vinculación, aprobadas por su supervisor,
     // que aportan a un proyecto donde este docente es miembro activo.
@@ -149,9 +150,13 @@ export async function GET(request: NextRequest) {
 
   // Las contribuciones académicas viajan en la misma lista que las publicaciones del sitio (misma forma),
   // sin repetir las que ya salen por título.
-  const titulosYaListados = new Set(publicacionesSitio.map((publicacion: any) => String(publicacion.title).trim().toLowerCase()));
+  // También se omiten las que ya salen como actividad (ej. una conferencia registrada en difusión y en contribuciones).
+  const normalizarTitulo = (titulo: unknown) => String(titulo ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const titulosDeActividades = new Set(actividadesDifusion.map((actividad: any) => normalizarTitulo(actividad.titulo)));
+  const titulosYaListados = new Set<string>(publicacionesSitio.map((publicacion: any) => normalizarTitulo(publicacion.title)));
+  titulosDeActividades.forEach((titulo) => titulosYaListados.add(titulo));
   const contribuciones = contribucionesAcademicas
-    .filter((contribucion: any) => !titulosYaListados.has(String(contribucion.titulo).trim().toLowerCase()))
+    .filter((contribucion: any) => !titulosYaListados.has(normalizarTitulo(contribucion.titulo)))
     .map((contribucion: any) => {
       const detalleTipo =
         contribucion.tipo === 'MEMORIA_EVENTO' ? `Ponencia${contribucion.nombreEvento ? ` — ${contribucion.nombreEvento}` : ''}`
@@ -174,5 +179,8 @@ export async function GET(request: NextRequest) {
 
   const publicaciones = [...publicacionesSitio, ...contribuciones];
 
-  return NextResponse.json({ actividades, publicaciones, podcasts });
+  // Un episodio cuya difusión ya está registrada como actividad no se cuenta dos veces.
+  const episodiosSinActividad = podcasts.filter((episodio: any) => !titulosDeActividades.has(normalizarTitulo(episodio.title)));
+
+  return NextResponse.json({ actividades, publicaciones, podcasts: episodiosSinActividad });
 }

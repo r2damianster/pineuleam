@@ -24,9 +24,21 @@ export async function POST(request: NextRequest) {
   }
 
   const body: GenerarBody = await request.json();
+  const publicaciones = body.publicaciones ?? [];
+  const contarPublicaciones = (prefijo: string) =>
+    publicaciones.filter((publicacion) => (publicacion.detalle ?? "").includes(`— ${prefijo}`)).length;
+  // Cifras calculadas aquí para que la IA no cuente (se equivocaba al sumar) ni invente totales.
+  const totales = {
+    actividades: (body.actividades ?? []).length,
+    contribuciones_y_publicaciones: publicaciones.length,
+    ponencias: contarPublicaciones("Ponencia"),
+    articulos: contarPublicaciones("Artículo"),
+    episodios_podcast_adicionales: (body.podcasts ?? []).length,
+  };
   const resumenDatos = JSON.stringify(
     {
       periodo: body.periodo,
+      totales,
       actividades: body.actividades ?? [],
       publicaciones: body.publicaciones ?? [],
       podcasts: body.podcasts ?? [],

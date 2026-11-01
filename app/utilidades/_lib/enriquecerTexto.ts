@@ -101,7 +101,10 @@ export const PROMPTS: Record<string, PromptConfig> = {
     instruction:
       "TAREA: A partir de un resumen estructurado (JSON) de las publicaciones, podcasts y actividades " +
       "que el usuario seleccionó para su informe mensual, redacta un resumen ejecutivo.\n" +
-      "REGLAS: Usa SOLO las cifras, títulos y fechas presentes en el JSON — nunca inventes datos, " +
+      "REGLAS: Para cualquier total usa EXACTAMENTE los valores del campo \"totales\" del JSON; no cuentes " +
+      "ítems por tu cuenta ni inventes cantidades (autores, asistentes, ponencias) que no estén escritas. " +
+      "Los episodios de podcast con actividad de difusión ya están dentro de \"actividades\". " +
+      "Usa SOLO las cifras, títulos y fechas presentes en el JSON — nunca inventes datos, " +
       "cifras ni logros que no estén ahí. Si el JSON está vacío o casi vacío, dilo explícitamente " +
       "en vez de inventar contenido. Tono institucional, en tercera persona o impersonal.\n" +
       "FORMATO: Un solo párrafo, máximo 5 líneas.",

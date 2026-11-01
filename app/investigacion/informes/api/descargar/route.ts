@@ -52,10 +52,23 @@ export async function POST(request: NextRequest) {
   const podcasts = body.podcasts ?? [];
   const dificultades = body.dificultades ?? [];
 
+  const formatearFecha = (fechaIso: string) => {
+    const [anio, mes, dia] = String(fechaIso).slice(0, 10).split("-");
+    return anio && mes && dia ? `${dia}/${mes}/${anio}` : fechaIso;
+  };
+  // Muchas actividades guardan el título como descripción: no se repite el mismo texto dos veces.
+  const descripcionUtil = (titulo: string, descripcion?: string | null) => {
+    const texto = (descripcion ?? "").trim();
+    if (!texto) return "";
+    const normalizar = (valor: string) => valor.trim().toLowerCase().replace(/\s+/g, " ");
+    return normalizar(texto) === normalizar(titulo) ? "" : texto;
+  };
+
   const funciones: string[] = [
-    ...actividades.map(
-      (a) => `${a.titulo} (${a.fecha})${a.descripcion ? `: ${a.descripcion}` : ""}`
-    ),
+    ...actividades.map((a) => {
+      const descripcion = descripcionUtil(a.titulo, a.descripcion);
+      return `${a.titulo} (${formatearFecha(a.fecha)})${descripcion ? `: ${descripcion}` : ""}`;
+    }),
     ...publicaciones.map(
       (p) => `Contribución académica registrada: "${p.title}" — ${p.authors} (${p.category})`
     ),
@@ -63,8 +76,9 @@ export async function POST(request: NextRequest) {
   ];
 
   const resultadosAvances =
-    `${publicaciones.length} publicaciones científicas, ${podcasts.length} episodios de podcast y ` +
-    `${actividades.length} actividades registradas durante el período ${body.periodo.etiqueta}.`;
+    `${publicaciones.length} contribuciones académicas y publicaciones, ${podcasts.length} episodios de podcast ` +
+    `(además de los asociados a actividades de difusión) y ${actividades.length} actividades registradas ` +
+    `durante el período ${body.periodo.etiqueta}.`;
 
   const buffer = renderizarPlantilla("informe-investigacion-mensual.docx", {
     CARRERA,
