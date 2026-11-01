@@ -48,9 +48,9 @@ export const documentCategories: DocumentCategory[] = [
   },
   {
     id: 'eventos',
-    label: 'Eventos y capacitaciones',
+    label: 'Eventos, capacitaciones y contribuciones',
     icon: '🎤',
-    description: 'Informes y materiales de eventos, jornadas y capacitaciones.',
+    description: 'Respaldos de eventos, jornadas, capacitaciones, conferencias y ponencias.',
   },
   {
     id: 'certificados',
@@ -200,7 +200,7 @@ export const projectDocuments: ProjectDocument[] = [
     icon: '🎤',
     date: '2026-10-22',
     period: '2026-2',
-    category: 'oficios',
+    category: 'eventos',
   },
 
   // ── Actas y convocatorias ─────────────────────────────────────────────
