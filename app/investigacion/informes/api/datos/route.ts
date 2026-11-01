@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   const sql = neon(process.env.DATABASE_URL!);
   const usuarioId = Number(usuario.id);
 
-  const [actividadesDifusion, publicaciones, podcasts, actividadesPasantes, aportesValidados, ciclosDelPeriodo, proyectosDelDocente] = await Promise.all([
+  const [actividadesDifusion, publicacionesSitio, podcasts, actividadesPasantes, aportesValidados, contribucionesAcademicas, ciclosDelPeriodo, proyectosDelDocente] = await Promise.all([
     sql`
       SELECT id, titulo, tipo, categoria, fecha, descripcion
       FROM actividades_difusion
@@ -74,6 +74,24 @@ export async function GET(request: NextRequest) {
         AND x.proyecto_id IN (SELECT pm.proyecto_id FROM proyecto_miembros pm WHERE pm.usuario_id = ${usuarioId} AND pm.activo)
         AND (x.actividad_difusion_id IS NULL OR NOT (${usuarioId} = ANY(COALESCE(ad.profesores_responsables, '{}'))))
       ORDER BY x.fecha, x.id
+    `,
+    // Contribuciones académicas (artículos, libros, capítulos, ponencias/memorias, propiedad intelectual)
+    // aprobadas, publicadas en el período, donde este docente es autor o que pertenecen a un proyecto suyo.
+    sql`
+      SELECT c.id, c."titulo", c."tipoPublicacion"::text AS tipo, c."fechaPublicacion", c."linkPublicacion",
+             c."nombreEvento", c."nombreRevista", c."tituloLibro",
+             COALESCE((
+               SELECT string_agg(ca."authorName", ', ' ORDER BY ca."order")
+               FROM "ContributionAuthor" ca WHERE ca."contributionId" = c.id
+             ), '') AS autores
+      FROM "Contribution" c
+      WHERE c."aprobada" = true
+        AND c."fechaPublicacion" >= ${desde}::date AND c."fechaPublicacion" < (${hasta}::date + INTERVAL '1 day')
+        AND (
+          EXISTS (SELECT 1 FROM "ContributionAuthor" ca WHERE ca."contributionId" = c.id AND ca."usuarioId" = ${usuarioId})
+          OR c."proyectoId" IN (SELECT pm.proyecto_id::text FROM proyecto_miembros pm WHERE pm.usuario_id = ${usuarioId} AND pm.activo)
+        )
+      ORDER BY c."fechaPublicacion"
     `,
     sql`SELECT id FROM ciclos_academicos WHERE ${hasta}::date BETWEEN fecha_inicio AND fecha_fin LIMIT 1`,
     sql`
@@ -128,6 +146,33 @@ export async function GET(request: NextRequest) {
       descripcion: `${actividad.descripcion} [${actividad.horas} h]`,
     })),
   ];
+
+  // Las contribuciones académicas viajan en la misma lista que las publicaciones del sitio (misma forma),
+  // sin repetir las que ya salen por título.
+  const titulosYaListados = new Set(publicacionesSitio.map((publicacion: any) => String(publicacion.title).trim().toLowerCase()));
+  const contribuciones = contribucionesAcademicas
+    .filter((contribucion: any) => !titulosYaListados.has(String(contribucion.titulo).trim().toLowerCase()))
+    .map((contribucion: any) => {
+      const detalleTipo =
+        contribucion.tipo === 'MEMORIA_EVENTO' ? `Ponencia${contribucion.nombreEvento ? ` — ${contribucion.nombreEvento}` : ''}`
+        : contribucion.tipo === 'CAPITULO_LIBRO' ? `Capítulo de libro${contribucion.tituloLibro ? ` — ${contribucion.tituloLibro}` : ''}`
+        : contribucion.tipo === 'LIBRO' ? 'Libro'
+        : contribucion.tipo === 'PROPIEDAD_INTELECTUAL' ? 'Propiedad intelectual'
+        : `Artículo${contribucion.nombreRevista ? ` — ${contribucion.nombreRevista}` : ''}`;
+      const fechaIso = new Date(contribucion.fechaPublicacion).toISOString();
+      return {
+        id: contribucion.id,
+        title: contribucion.titulo,
+        authors: contribucion.autores || 'Sin autores registrados',
+        type: contribucion.tipo,
+        category: detalleTipo,
+        publication_date: fechaIso,
+        doi_link: contribucion.linkPublicacion,
+        created: fechaIso,
+      };
+    });
+
+  const publicaciones = [...publicacionesSitio, ...contribuciones];
 
   return NextResponse.json({ actividades, publicaciones, podcasts });
 }

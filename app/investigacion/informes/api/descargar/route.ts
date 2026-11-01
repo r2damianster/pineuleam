@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       (a) => `${a.titulo} (${a.fecha})${a.descripcion ? `: ${a.descripcion}` : ""}`
     ),
     ...publicaciones.map(
-      (p) => `Publicación científica registrada: "${p.title}" — ${p.authors} (${p.category})`
+      (p) => `Contribución académica registrada: "${p.title}" — ${p.authors} (${p.category})`
     ),
     ...podcasts.map((v) => `Episodio de podcast publicado: "${v.title}" (${v.category})`),
   ];

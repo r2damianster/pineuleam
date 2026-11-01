@@ -245,8 +245,8 @@ export default function InformesMensualesPage() {
             />
 
             <SeccionSeleccion
-              titulo="Publicaciones científicas del proyecto en el período"
-              vacio="No hay publicaciones registradas en el período."
+              titulo="Publicaciones y contribuciones académicas en el período"
+              vacio="No hay publicaciones ni contribuciones académicas (artículos, libros, ponencias) registradas en el período."
               items={publicaciones.map((p) => ({ id: p.id, titulo: p.title, subtitulo: `${p.authors} · ${p.category}` }))}
               seleccionados={pubSel}
               onToggle={(id) => toggle(pubSel, setPubSel, id as string)}
