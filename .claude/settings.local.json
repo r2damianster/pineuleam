@@ -50,7 +50,8 @@
       "Bash(taskkill //F //PID 33580)",
       "mcp__claude_ai_Neon__run_sql",
       "Bash(npx tsx *)",
-      "Bash(node node_modules/typescript/bin/tsc --noEmit)"
+      "Bash(node node_modules/typescript/bin/tsc --noEmit)",
+      "Bash(vercel api -X DELETE:*)"
     ]
   },
   "enabledMcpjsonServers": [
@@ -58,10 +59,3 @@
     "graphify"
   ]
 }
-
-{
-  "permissions": {
-    "allow": ["Bash(vercel api -X DELETE:*)"]
-  }
-}
-
