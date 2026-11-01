@@ -161,7 +161,7 @@ export default function InformesMensualesPage() {
       const sel = seleccionParaEnvio();
       const body = {
         periodo: sel.periodo,
-        actividades: actividades.filter((a) => actSel.has(a.id)).map((a) => ({ id: a.id, titulo: a.titulo, fecha: a.fecha, descripcion: a.descripcion })),
+        actividades: actividades.filter((a) => actSel.has(a.id)).map((a) => ({ id: a.id, titulo: a.titulo, tipo: a.tipo, fecha: a.fecha, descripcion: a.descripcion })),
         publicaciones: publicaciones.filter((p) => pubSel.has(p.id)).map((p) => ({ id: p.id, title: p.title, authors: p.authors, category: p.category })),
         podcasts: podcasts.filter((v) => vidSel.has(v.id)).map((v) => ({ id: v.id, title: v.title, category: v.category })),
         resumenEjecutivo,

@@ -11,6 +11,7 @@ const CARRERA = "Pedagogía de los Idiomas Nacionales y Extranjeros";
 interface ActividadSel {
   id: number;
   titulo: string;
+  tipo?: string;
   fecha: string;
   descripcion?: string | null;
 }
@@ -137,10 +138,44 @@ export async function POST(request: NextRequest) {
     ...podcasts.map((v) => `Episodio de podcast publicado: "${v.title}" (${v.category})`),
   ];
 
-  const resultadosAvances =
-    `${publicaciones.length} contribuciones académicas y publicaciones, ${podcasts.length} episodios de podcast ` +
-    `(además de los asociados a actividades de difusión) y ${actividades.length} actividades registradas ` +
-    `durante el período ${body.periodo.etiqueta}.`;
+  // Desglose de lo logrado por tipo, en vez de un total genérico.
+  const unir = (partes: string[]) => (partes.length > 1 ? `${partes.slice(0, -1).join(", ")} y ${partes[partes.length - 1]}` : partes[0] ?? "");
+  const plural = (cantidad: number, singular: string, pluralTexto: string) => `${cantidad} ${cantidad === 1 ? singular : pluralTexto}`;
+  const contarCategoria = (prefijos: string[]) =>
+    publicaciones.filter((p) => prefijos.some((prefijo) => p.category.startsWith(prefijo))).length;
+  const nPonencias = contarCategoria(["Ponencia"]);
+  const nArticulos = contarCategoria(["Artículo", "regional", "impacto"]);
+  const nCapitulos = contarCategoria(["Capítulo"]);
+  const nLibros = contarCategoria(["Libro", "libros"]);
+  const nPropiedad = contarCategoria(["Propiedad intelectual"]);
+  const nOtras = publicaciones.length - nPonencias - nArticulos - nCapitulos - nLibros - nPropiedad;
+  const tiposContribucion = [
+    nPonencias > 0 ? plural(nPonencias, "ponencia", "ponencias") : "",
+    nArticulos > 0 ? plural(nArticulos, "artículo científico", "artículos científicos") : "",
+    nLibros > 0 ? plural(nLibros, "libro", "libros") : "",
+    nCapitulos > 0 ? plural(nCapitulos, "capítulo de libro", "capítulos de libro") : "",
+    nPropiedad > 0 ? plural(nPropiedad, "registro de propiedad intelectual", "registros de propiedad intelectual") : "",
+    nOtras > 0 ? plural(nOtras, "otra contribución", "otras contribuciones") : "",
+  ].filter(Boolean);
+
+  const nEstudiantiles = actividades.filter((a) => a.titulo.startsWith(PREFIJO_ESTUDIANTIL)).length;
+  const nGenerales = actividades.length - nEstudiantiles;
+  const nEpisodios = podcasts.length + actividades.filter((a) => a.tipo === "podcast").length;
+
+  const logros: string[] = [];
+  if (publicaciones.length > 0) {
+    logros.push(`${plural(publicaciones.length, "contribución académica", "contribuciones académicas")} (${unir(tiposContribucion)})`);
+  }
+  if (nEpisodios > 0) logros.push(plural(nEpisodios, "episodio de podcast", "episodios de podcast"));
+  if (nGenerales > 0) logros.push(`${plural(nGenerales, "actividad de difusión y gestión del proyecto", "actividades de difusión y gestión del proyecto")}`);
+  if (nEstudiantiles > 0) {
+    logros.push(
+      `${plural(nEstudiantiles, "actividad realizada", "actividades realizadas")} en interacción entre Vinculación e Investigación (estudiantes de Vinculación en tareas de investigación)`
+    );
+  }
+  const resultadosAvances = logros.length > 0
+    ? `Durante el período ${body.periodo.etiqueta} se registraron: ${unir(logros)}.`
+    : `No se registraron resultados durante el período ${body.periodo.etiqueta}.`;
 
   const buffer = renderizarPlantilla("informe-investigacion-mensual.docx", {
     CARRERA,
