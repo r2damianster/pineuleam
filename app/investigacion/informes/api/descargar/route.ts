@@ -64,14 +64,76 @@ export async function POST(request: NextRequest) {
     return normalizar(texto) === normalizar(titulo) ? "" : texto;
   };
 
+  // Actividades de investigación estudiantil con la misma fecha y descripción (ej. apoyo en un congreso,
+  // asignado a varios pasantes) se resumen en una sola línea con todos los nombres.
+  const PREFIJO_ESTUDIANTIL = "Investigación estudiantil — ";
+  const extraerHoras = (descripcion: string) => descripcion.match(/\s*\[(\d+(?:[.,]\d+)?) h\]\s*$/);
+  const lineasActividades: string[] = [];
+  const gruposEstudiantiles = new Map<string, ActividadSel[]>();
+  for (const actividad of actividades) {
+    if (!actividad.titulo.startsWith(PREFIJO_ESTUDIANTIL)) continue;
+    const clave = `${actividad.fecha}|${(actividad.descripcion ?? "").trim()}`;
+    gruposEstudiantiles.set(clave, [...(gruposEstudiantiles.get(clave) ?? []), actividad]);
+  }
+  const gruposYaEscritos = new Set<string>();
+  for (const actividad of actividades) {
+    const clave = `${actividad.fecha}|${(actividad.descripcion ?? "").trim()}`;
+    const grupo = actividad.titulo.startsWith(PREFIJO_ESTUDIANTIL) ? gruposEstudiantiles.get(clave) : undefined;
+    if (grupo && grupo.length > 1) {
+      if (gruposYaEscritos.has(clave)) continue;
+      gruposYaEscritos.add(clave);
+      const detalles = grupo.map((miembro) => {
+        const resto = miembro.titulo.slice(PREFIJO_ESTUDIANTIL.length);
+        const posicionProyecto = resto.lastIndexOf(" (");
+        return {
+          nombre: posicionProyecto >= 0 ? resto.slice(0, posicionProyecto) : resto,
+          proyecto: posicionProyecto >= 0 ? resto.slice(posicionProyecto + 1) : "",
+        };
+      });
+      const nombres = detalles.map((detalle) => detalle.nombre);
+      const listaNombres = nombres.length > 1 ? `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}` : nombres[0];
+      const descripcionBase = (actividad.descripcion ?? "").trim();
+      const coincidenciaHoras = extraerHoras(descripcionBase);
+      const textoSinHoras = coincidenciaHoras ? descripcionBase.replace(coincidenciaHoras[0], "") : descripcionBase;
+      const sufijoHoras = coincidenciaHoras ? ` [${coincidenciaHoras[1]} h c/u]` : "";
+      lineasActividades.push(
+        `${PREFIJO_ESTUDIANTIL}${listaNombres} ${detalles[0].proyecto} (${formatearFecha(actividad.fecha)}): ${textoSinHoras}${sufijoHoras}`
+      );
+      continue;
+    }
+    const descripcion = descripcionUtil(actividad.titulo, actividad.descripcion);
+    lineasActividades.push(`${actividad.titulo} (${formatearFecha(actividad.fecha)})${descripcion ? `: ${descripcion}` : ""}`);
+  }
+
+  // Ponencias del mismo evento se agrupan bajo un encabezado ("N ponencias en X") con la lista debajo.
+  const PREFIJO_PONENCIA = "Ponencia — ";
+  const ponenciasPorEvento = new Map<string, PublicacionSel[]>();
+  const otrasPublicaciones: PublicacionSel[] = [];
+  for (const publicacion of publicaciones) {
+    if (publicacion.category.startsWith(PREFIJO_PONENCIA)) {
+      const evento = publicacion.category.slice(PREFIJO_PONENCIA.length);
+      ponenciasPorEvento.set(evento, [...(ponenciasPorEvento.get(evento) ?? []), publicacion]);
+    } else {
+      otrasPublicaciones.push(publicacion);
+    }
+  }
+  const lineasPublicaciones: string[] = [];
+  ponenciasPorEvento.forEach((ponencias, evento) => {
+    if (ponencias.length === 1) {
+      const unica = ponencias[0];
+      lineasPublicaciones.push(`Contribución académica registrada: "${unica.title}" — ${unica.authors} (${unica.category})`);
+      return;
+    }
+    lineasPublicaciones.push(`${ponencias.length} ponencias presentadas en ${evento}:`);
+    ponencias.forEach((ponencia) => lineasPublicaciones.push(`– "${ponencia.title}" — ${ponencia.authors}`));
+  });
+  otrasPublicaciones.forEach((publicacion) =>
+    lineasPublicaciones.push(`Contribución académica registrada: "${publicacion.title}" — ${publicacion.authors} (${publicacion.category})`)
+  );
+
   const funciones: string[] = [
-    ...actividades.map((a) => {
-      const descripcion = descripcionUtil(a.titulo, a.descripcion);
-      return `${a.titulo} (${formatearFecha(a.fecha)})${descripcion ? `: ${descripcion}` : ""}`;
-    }),
-    ...publicaciones.map(
-      (p) => `Contribución académica registrada: "${p.title}" — ${p.authors} (${p.category})`
-    ),
+    ...lineasActividades,
+    ...lineasPublicaciones,
     ...podcasts.map((v) => `Episodio de podcast publicado: "${v.title}" (${v.category})`),
   ];
 

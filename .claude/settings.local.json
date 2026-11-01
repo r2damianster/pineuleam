@@ -58,3 +58,10 @@
     "graphify"
   ]
 }
+
+{
+  "permissions": {
+    "allow": ["Bash(vercel api -X DELETE:*)"]
+  }
+}
+
