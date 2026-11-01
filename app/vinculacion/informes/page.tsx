@@ -25,7 +25,9 @@ function InformesVinculacionContenido() {
   const [tab, setTab] = useState<'supervisor' | 'lider' | 'historial'>('supervisor');
 
   // Informe MENSUAL (adicional al semestral, Sesión 57) — sub-selector dentro de cada pestaña.
-  const mesActualIso = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString().slice(0, 7);
+  // Por defecto el mes anterior (el que se informa al cerrar); se puede cambiar a mano.
+  const ahoraEcuador = new Date(Date.now() - 5 * 60 * 60 * 1000);
+  const mesActualIso = new Date(Date.UTC(ahoraEcuador.getUTCFullYear(), ahoraEcuador.getUTCMonth() - 1, 1)).toISOString().slice(0, 7);
   const [modoSupervisor, setModoSupervisor] = useState<'semestral' | 'mensual'>('mensual');
   const [modoLider, setModoLider] = useState<'semestral' | 'mensual'>('mensual');
   const [mesSupervisor, setMesSupervisor] = useState(mesActualIso);

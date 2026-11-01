@@ -9,13 +9,14 @@ const MESES = [
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
+// Por defecto el mes anterior (el que se informa al cerrar); se puede cambiar a mano.
 function primerDiaMesActual(): string {
   const hoy = new Date();
-  return new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0, 10);
+  return new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth() - 1, 1)).toISOString().slice(0, 10);
 }
 function ultimoDiaMesActual(): string {
   const hoy = new Date();
-  return new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().slice(0, 10);
+  return new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), 0)).toISOString().slice(0, 10);
 }
 function etiquetaPeriodo(desde: string, hasta: string): string {
   const d1 = new Date(desde + 'T00:00:00');
