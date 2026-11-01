@@ -3,6 +3,7 @@
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { clasificarRangoEdad } from './informesVinculacion';
 import { construirPeriodo, type PeriodoProyecto } from './periodosProyecto';
+import { horasNoClubPorUsuario } from './horasNoClubPasante';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -415,6 +416,11 @@ export async function datosInformeSupervisor(
     WHERE u.id = ANY(${contexto.pasantesIds.length ? contexto.pasantesIds : [0]})
     GROUP BY u.id, u.nombres, u.apellidos ORDER BY u.apellidos, u.nombres
   `;
+  // El informe muestra las horas TOTALES del pasante en el periodo: clubes + podcast + investigación + autónomas.
+  const horasNoClub = await horasNoClubPorUsuario(sql, horasPasantes.map((fila: any) => fila.id), desdePeriodo, hastaCorte);
+  horasPasantes.forEach((fila: any) => {
+    fila.horas_periodo = Math.round((fila.horas_periodo + (horasNoClub.get(fila.id)?.horas || 0)) * 10) / 10;
+  });
   const gruposEspacios = await sql`
     SELECT e.nombre, e.categoria,
            (SELECT COUNT(*) FROM espacio_instructores ei WHERE ei.espacio_id = e.id)::int AS pasantes,

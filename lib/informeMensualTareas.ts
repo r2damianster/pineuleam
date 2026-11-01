@@ -6,6 +6,7 @@
 // formatos conviven: el semestral no se reemplaza, este es adicional.
 import type { NeonQueryFunction } from '@neondatabase/serverless';
 import { elegirFotos } from './informeSupervisorTareas';
+import { horasNoClubPorUsuario } from './horasNoClubPasante';
 
 type Sql = NeonQueryFunction<false, false>;
 
@@ -245,7 +246,7 @@ export async function datosInformeMensual(sql: Sql, params: { supervisorId: numb
   // Pasantes por espacio, con horas acreditadas por asistencia en el mes y sesiones aún
   // pendientes de aprobar (para poder avisar al supervisor sin que tenga que ir a buscarlo).
   const pasantesPorEspacio = await sql`
-    SELECT ei.espacio_id, u.id AS usuario_id, u.nombres, u.apellidos,
+    SELECT ei.espacio_id, ei.tipo, u.id AS usuario_id, u.nombres, u.apellidos,
            COALESCE(ROUND(SUM(EXTRACT(EPOCH FROM (a.hora_fin::time - a.hora_inicio::time))/3600.0)
              FILTER (WHERE a.estado_aprobacion = 'aprobado')::numeric, 1), 0)::float AS horas_mes,
            COUNT(DISTINCT a.id) FILTER (WHERE a.estado_aprobacion = 'pendiente')::int AS sesiones_pendientes
@@ -255,45 +256,42 @@ export async function datosInformeMensual(sql: Sql, params: { supervisorId: numb
     LEFT JOIN asistencia_espacio a ON a.id = ai.asistencia_id
          AND a.espacio_id = ei.espacio_id AND a.fecha BETWEEN ${desde}::date AND ${hasta}::date
     WHERE ei.espacio_id = ANY(${idsConsulta})
-    GROUP BY ei.espacio_id, u.id, u.nombres, u.apellidos
+    GROUP BY ei.espacio_id, ei.tipo, u.id, u.nombres, u.apellidos
     ORDER BY u.apellidos, u.nombres
   `;
 
-  // Un espacio categoria='podcast' no tiene sesiones de asistencia — sus pasantes (ej. Keyla,
-  // Alisson) siempre salían en 0h arriba aunque tuvieran horas de podcast aprobadas ese mes.
-  // Las horas reales de podcast viven en horas_podcast_pasante (por video, no por espacio),
-  // así que se calculan aparte y reemplazan el 0h para las filas de espacios de esa categoría.
-  const categoriaPorEspacio = new Map<number, string>(espacios.map((espacio: any) => [espacio.id, espacio.categoria]));
-  const idsEspaciosPodcast = espacios.filter((espacio: any) => espacio.categoria === 'podcast').map((espacio: any) => espacio.id);
-  const horasPodcastPorUsuario = new Map<number, number>();
-  const pendientesPodcastPorUsuario = new Map<number, number>();
-  if (idsEspaciosPodcast.length) {
-    const filasPodcast = await sql`
-      SELECT h.usuario_id,
-             COALESCE(ROUND(SUM(h.horas_total) FILTER (WHERE h.estado_aprobacion = 'aprobado'
-               AND COALESCE(ad.fecha, v.published_date::date, h.fecha_aprobacion::date) BETWEEN ${desde}::date AND ${hasta}::date)::numeric, 1), 0)::float AS horas,
-             COUNT(*) FILTER (WHERE h.estado_aprobacion = 'pendiente')::int AS episodios_pendientes
-      FROM horas_podcast_pasante h
-      JOIN videos v ON v.id = h.video_id
-      LEFT JOIN actividades_difusion ad ON ad.id = v.actividad_difusion_id
-      GROUP BY h.usuario_id
-    `;
-    filasPodcast.forEach((fila: any) => {
-      horasPodcastPorUsuario.set(fila.usuario_id, fila.horas);
-      pendientesPodcastPorUsuario.set(fila.usuario_id, fila.episodios_pendientes);
-    });
+  // El informe muestra las horas TOTALES del pasante en el mes (clubes + podcast + investigación +
+  // autónomas), no una sola categoría. Las horas fuera de club no pertenecen a un espacio de
+  // asistencia (el podcast ni siquiera tiene sesiones), así que se cargan UNA sola vez por pasante,
+  // en la fila de su espacio titular; las sesiones de club siguen en la fila de cada espacio.
+  // Un pasante sin titular en ningún espacio (aún sin supervisor) las lleva en su primera fila.
+  const idsPasantes = Array.from(new Set<number>(pasantesPorEspacio.map((fila: any) => fila.usuario_id)));
+  const horasNoClub = await horasNoClubPorUsuario(sql, idsPasantes, desde, hasta);
+  const conTitularEnBd = new Set<number>(
+    idsPasantes.length
+      ? (await sql`
+          SELECT DISTINCT ei.usuario_id FROM espacio_instructores ei
+          JOIN "espacios_enseñanza" e ON e.id = ei.espacio_id
+          WHERE ei.usuario_id = ANY(${idsPasantes}) AND ei.tipo = 'titular' AND e.area = 'vinculacion'
+        `).map((fila: any) => fila.usuario_id)
+      : []
+  );
+  const filaDestinoNoClub = new Map<number, any>();
+  for (const fila of pasantesPorEspacio) {
+    if (filaDestinoNoClub.has(fila.usuario_id)) continue;
+    const esDestino = fila.tipo === 'titular' || !conTitularEnBd.has(fila.usuario_id);
+    if (esDestino) filaDestinoNoClub.set(fila.usuario_id, fila);
   }
-
   const nombreEspacioPorId = new Map<number, string>(espacios.map((espacio: any) => [espacio.id, espacio.nombre]));
   const profesorIdPorEspacio = new Map<number, number>(espacios.map((espacio: any) => [espacio.id, espacio.profesor_id]));
   const pasantes = pasantesPorEspacio.map((fila: any) => {
-    const esPodcast = categoriaPorEspacio.get(fila.espacio_id) === 'podcast';
+    const extra = filaDestinoNoClub.get(fila.usuario_id) === fila ? horasNoClub.get(fila.usuario_id) : undefined;
     return {
       espacio_nombre: nombreEspacioPorId.get(fila.espacio_id) || '',
       supervisor_nombre: nombreSupervisorPorId.get(profesorIdPorEspacio.get(fila.espacio_id) || 0) || '',
       estudiante_nombre: `${fila.nombres} ${fila.apellidos}`,
-      horas_mes: esPodcast ? (horasPodcastPorUsuario.get(fila.usuario_id) || 0) : fila.horas_mes,
-      pendientes: esPodcast ? (pendientesPodcastPorUsuario.get(fila.usuario_id) || 0) : (fila.sesiones_pendientes || 0),
+      horas_mes: Math.round((fila.horas_mes + (extra?.horas || 0)) * 10) / 10,
+      pendientes: (fila.sesiones_pendientes || 0) + (extra?.pendientes || 0),
     };
   });
 
