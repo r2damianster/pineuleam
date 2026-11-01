@@ -45,7 +45,7 @@ export interface DatosInformeMensual {
   };
   espacios: BeneficiariosEspacio[];
   actividades: string[];
-  evidencias: { url: string; fecha: string; espacio_nombre: string; num_beneficiarios: number; num_pasantes: number }[];
+  evidencias: { url: string; fecha: string; espacio_nombre: string; num_beneficiarios: number | null; num_pasantes: number | null; es_audiencia?: boolean }[];
   observaciones: string;
   /** Horas acreditadas por pasante en el mes, agrupadas por espacio — para la tabla "Horas de los pasantes". */
   pasantes: { espacio_nombre: string; supervisor_nombre: string; estudiante_nombre: string; horas_mes: number; pendientes: number }[];
@@ -220,17 +220,30 @@ export async function datosInformeMensual(sql: Sql, params: { supervisorId: numb
       AND a.fecha BETWEEN ${desde}::date AND ${hasta}::date
   `;
   const idsDifusionDelMes = difusionDelMes.map((actividad: any) => String(actividad.id));
+  // Fotos de podcast/evento: no tienen sesión de asistencia, así que el pie usa los estudiantes que
+  // acreditaron horas en el episodio (podcast) y la audiencia alcanzada — nunca un "0" inventado.
   const fotosDifusion = idsDifusionDelMes.length
     ? await sql`
-        SELECT url, to_char(fecha_evento, 'DD/MM/YYYY') AS fecha
-        FROM fotos
-        WHERE origen IN ('evento', 'podcast') AND fuente_id = ANY(${idsDifusionDelMes})
-          AND calidad <> 'mala' AND menores <> 'si'
+        SELECT f.url, to_char(f.fecha_evento, 'DD/MM/YYYY') AS fecha, ad.tipo, ad.audiencia_alcanzada,
+               (SELECT COUNT(DISTINCT h.usuario_id)::int FROM horas_podcast_pasante h
+                 JOIN videos v ON v.id = h.video_id WHERE v.actividad_difusion_id = ad.id) AS num_pasantes
+        FROM fotos f
+        LEFT JOIN actividades_difusion ad ON ad.id::text = f.fuente_id
+        WHERE f.origen IN ('evento', 'podcast') AND f.fuente_id = ANY(${idsDifusionDelMes})
+          AND f.calidad <> 'mala' AND f.menores <> 'si'
       `
     : [];
   const fotosCandidatas = [
     ...fotosAsistencia,
-    ...fotosDifusion.map((foto: any) => ({ url: foto.url, fecha: foto.fecha, espacio_nombre: 'Podcast/Evento', usar_en_informe: false, num_beneficiarios: 0, num_pasantes: 0 })),
+    ...fotosDifusion.map((foto: any) => ({
+      url: foto.url,
+      fecha: foto.fecha,
+      espacio_nombre: foto.tipo === 'podcast' ? 'Podcast' : 'Evento',
+      usar_en_informe: false,
+      num_pasantes: foto.num_pasantes > 0 ? foto.num_pasantes : null,
+      num_beneficiarios: foto.audiencia_alcanzada > 0 ? foto.audiencia_alcanzada : null,
+      es_audiencia: true,
+    })),
   ];
 
   const totalBeneficiarios = espaciosSalida.reduce((suma, espacio) => suma + espacio.total, 0);

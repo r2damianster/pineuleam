@@ -2,6 +2,7 @@
 // La plantilla (encabezado, colores, tablas, textos) se conserva tal cual: solo se completan
 // las celdas vacías y se agregan filas, el cronograma, gráficos y fotos.
 import fs from 'fs';
+import { pieDeFoto } from '@/lib/pieFotoInforme';
 import path from 'path';
 import PizZip from 'pizzip';
 
@@ -302,7 +303,7 @@ export async function generarInformeSupervisorDesdePlantilla(
     const celdasFotos = fotosDescargadas.map(({ foto, datosFoto }) => {
       const contenido =
         imagenComoParrafo(datosFoto!, 'jpeg', 250) +
-        parrafo(corrida(`${foto.espacio_nombre} · ${foto.fecha} · ${foto.num_pasantes} estudiante(s), ${foto.num_beneficiarios} beneficiario(s)`, { tamano: 14 }), 'center');
+        parrafo(corrida(pieDeFoto(foto), { tamano: 14 }), 'center');
       return celdaSimple(4700, contenido);
     });
     const filasFotos: string[] = [];

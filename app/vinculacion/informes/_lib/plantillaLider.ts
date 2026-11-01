@@ -7,6 +7,7 @@
 // Si se borraron las notas de elaboración («Ejemplo:», «Copiar el cronograma…», etc.) o filas vacías,
 // el contenido se agrega igual al final de la celda correspondiente.
 import fs from 'fs';
+import { pieDeFoto } from '@/lib/pieFotoInforme';
 import path from 'path';
 import PizZip from 'pizzip';
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom';
@@ -399,7 +400,7 @@ export async function generarDesdeArchivo(
         celdaSimple(
           4400,
           imagenComoParrafo(datosFoto!, 'jpeg', 230) +
-            parrafo(corrida(`${foto.espacio_nombre} · ${foto.fecha} · ${foto.num_pasantes} estudiante(s), ${foto.num_beneficiarios} beneficiario(s)`, { tamano: 14 }), 'center')
+            parrafo(corrida(pieDeFoto(foto), { tamano: 14 }), 'center')
         )
       );
       const filasFotos: string[] = [];

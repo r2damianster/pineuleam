@@ -6,6 +6,7 @@
 // un marcador {{CAMPO}} — el encabezado, logo, fuentes y etiquetas de sección son los originales,
 // sin tocar. Reutiliza los helpers de plantillaSupervisor.ts (mismo patrón que el semestral).
 import fs from 'fs';
+import { pieDeFoto } from '@/lib/pieFotoInforme';
 import path from 'path';
 import PizZip from 'pizzip';
 import { escaparXml, corrida, parrafo, celdaSimple, tabla, fila, dimensionesImagen, dibujoEnLinea, descargarFoto } from './plantillaSupervisor';
@@ -73,7 +74,7 @@ async function construirBloqueEvidencias(
     const { relacion, identificador } = registrarImagen(datosFoto!, 'jpeg');
     return (
       parrafo(dibujoEnLinea(relacion, ancho, alto, identificador), 'center') +
-      parrafo(corrida(`${foto.espacio_nombre} · ${foto.fecha} · ${foto.num_pasantes} estudiante(s), ${foto.num_beneficiarios} beneficiario(s)`, { tamano: 14 }), 'center')
+      parrafo(corrida(pieDeFoto(foto), { tamano: 14 }), 'center')
     );
   }).join('');
 }
