@@ -371,6 +371,15 @@ const documents = {
       period: '2026-1',
     },
     {
+      id: 'informe-mensual-investigacion-octubre-2026',
+      title: 'Informe Mensual de Actividades — Octubre 2026',
+      filename: '2026-10-31_InformeMensualInvestigacion-signed.pdf',
+      description: 'Reporte mensual del líder de proyecto para octubre 2026: 18 actividades registradas, 9 episodios de podcast, conferencia magistral en UNESUM INNOVA 2026, IV Congreso Internacional INEDUS, 15 horas de apoyo estudiantil, 1 artículo y 10 ponencias. Documento firmado por el líder del proyecto.',
+      icon: '📋',
+      date: '2026-10-31',
+      period: '2026-2',
+    },
+    {
       id: 'pub-lascano-villafuerte-confidence-2026',
       title: 'Confidence and Formal Speech in High School Students in English Language: Mentoring in EFL instruction',
       filename: 'https://doi.org/10.32996/jeltal.2026.8.8.13',
@@ -479,6 +488,18 @@ export default function DocumentsPage() {
           </h3>
           <div className="grid gap-6 md:grid-cols-2">
             {documents.informes.filter((doc) => doc.period === '2026-1').map((doc) => (
+              <DocCard key={doc.id} doc={doc} />
+            ))}
+          </div>
+        </div>
+
+        {/* Período 2026-2 (Sep-Dic) */}
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-gray-600 mb-4 pl-4 border-l-4 border-uleam-blue">
+            Período 2026-2 (Septiembre 2026 - Diciembre 2026)
+          </h3>
+          <div className="grid gap-6 md:grid-cols-2">
+            {documents.informes.filter((doc) => doc.period === '2026-2').map((doc) => (
               <DocCard key={doc.id} doc={doc} />
             ))}
           </div>
