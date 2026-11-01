@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 import { requireInvestigacionApi } from "../../../_lib/auth";
 import { renderizarPlantilla } from "../../../../utilidades/_lib/docxtemplater";
+import PizZip from "pizzip";
+import { corrida, parrafo, celdaSimple, tabla, fila, dimensionesImagen, dibujoEnLinea, descargarFoto } from "../../../../vinculacion/informes/_lib/plantillaSupervisor";
 import { respuestaDocx } from "../../../../utilidades/_lib/respuestaArchivo";
 
 export const runtime = "nodejs";
@@ -26,6 +28,10 @@ interface PodcastSel {
   title: string;
   category: string;
 }
+interface FotoSel {
+  url: string;
+  pie: string;
+}
 interface Dificultad {
   inconveniente: string;
   solucion: string;
@@ -36,6 +42,7 @@ interface DescargarBody {
   actividades: ActividadSel[];
   publicaciones: PublicacionSel[];
   podcasts: PodcastSel[];
+  fotos?: FotoSel[];
   resumenEjecutivo: string;
   planSiguiente: string;
   dificultades: Dificultad[];
@@ -193,9 +200,45 @@ export async function POST(request: NextRequest) {
   `;
   const nombreProyecto = proyectosDelDocente.map((proyecto: any) => proyecto.nombre_oficial).filter(Boolean).join("; ") || NOMBRE_PROYECTO_POR_DEFECTO;
 
-  const buffer = renderizarPlantilla("informe-investigacion-mensual.docx", {
+  // Fotos de evidencia elegidas por el usuario: bloque OOXML (tabla de 2 columnas) + imágenes añadidas al .docx.
+  const origen = new URL(request.url).origin;
+  const fotosDescargadas = (
+    await Promise.all(
+      (body.fotos ?? []).slice(0, 6).map(async (foto) => ({
+        foto,
+        datos: await descargarFoto(foto.url.startsWith("/") ? `${origen}${foto.url}` : foto.url),
+      }))
+    )
+  ).filter((elemento) => elemento.datos);
+  const imagenesParaIncrustar: { relacion: string; datos: Buffer }[] = [];
+  let bloqueEvidencias = "";
+  if (fotosDescargadas.length > 0) {
+    const celdasFotos = fotosDescargadas.map(({ foto, datos }, indice) => {
+      const dimensiones = dimensionesImagen(datos!) ?? { ancho: 4, alto: 3 };
+      const ancho = Math.min(280, dimensiones.ancho);
+      const alto = Math.round((ancho * dimensiones.alto) / dimensiones.ancho);
+      const relacion = `rIdEvidenciaInv${indice + 1}`;
+      imagenesParaIncrustar.push({ relacion, datos: datos! });
+      return celdaSimple(
+        4500,
+        parrafo(dibujoEnLinea(relacion, ancho, alto, 9000 + indice), "center") +
+          parrafo(corrida(foto.pie, { tamano: 16 }), "center")
+      );
+    });
+    const filasFotos: string[] = [];
+    for (let inicio = 0; inicio < celdasFotos.length; inicio += 2) {
+      const par = celdasFotos.slice(inicio, inicio + 2);
+      if (par.length === 1) par.push(celdaSimple(4500, parrafo("")));
+      filasFotos.push(fila(par));
+    }
+    bloqueEvidencias =
+      parrafo(corrida("Evidencias fotográficas", { negrita: true, tamano: 21 })) + tabla([4500, 4500], filasFotos, false);
+  }
+
+  const bufferBase = renderizarPlantilla("informe-investigacion-mensual.docx", {
     CARRERA,
     PROYECTO: nombreProyecto,
+    EVIDENCIAS: bloqueEvidencias,
     LIDER: usuario.nombres,
     PERIODO: body.periodo.etiqueta,
     RESUMEN_EJECUTIVO: body.resumenEjecutivo || "Sin resumen ejecutivo proporcionado.",
@@ -206,6 +249,27 @@ export async function POST(request: NextRequest) {
       .map((d) => ({ INCONVENIENTE: d.inconveniente, SOLUCION: d.solucion || "—" })),
     PLAN_SIGUIENTE: body.planSiguiente || "Sin plan definido para el siguiente período.",
   });
+
+  let buffer: Buffer = bufferBase;
+  if (imagenesParaIncrustar.length > 0) {
+    const zip = new PizZip(bufferBase);
+    let relaciones = zip.file("word/_rels/document.xml.rels")!.asText();
+    let tipos = zip.file("[Content_Types].xml")!.asText();
+    imagenesParaIncrustar.forEach((imagen) => {
+      const nombreArchivo = `evidencia_inv_${imagen.relacion}.jpg`;
+      zip.file(`word/media/${nombreArchivo}`, imagen.datos);
+      relaciones = relaciones.replace(
+        "</Relationships>",
+        `<Relationship Id="${imagen.relacion}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${nombreArchivo}"/></Relationships>`
+      );
+    });
+    if (!/Extension="jpg"/i.test(tipos)) {
+      tipos = tipos.replace("<Default ", '<Default Extension="jpg" ContentType="image/jpeg"/><Default ');
+    }
+    zip.file("word/_rels/document.xml.rels", relaciones);
+    zip.file("[Content_Types].xml", tipos);
+    buffer = zip.generate({ type: "nodebuffer", compression: "DEFLATE" });
+  }
 
   const sql = neon(process.env.DATABASE_URL!);
   await sql`

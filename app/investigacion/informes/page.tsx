@@ -31,7 +31,7 @@ function etiquetaPeriodo(desde: string, hasta: string): string {
   return `${m1} de ${d1.getFullYear()} a ${m2} de ${d2.getFullYear()}`;
 }
 
-interface Actividad { id: number; titulo: string; tipo: string; categoria: string; fecha: string; descripcion: string | null; }
+interface Actividad { id: number; titulo: string; tipo: string; categoria: string; fecha: string; descripcion: string | null; evidencia_url?: string | null; }
 interface Publicacion { id: string; title: string; authors: string; type: string; category: string; publication_date: string; doi_link: string | null; created: string; }
 interface Podcast { id: string; title: string; description: string | null; category: string; tags: string[]; published_date: string | null; created: string; }
 interface Dificultad { inconveniente: string; solucion: string; }
@@ -54,6 +54,7 @@ export default function InformesMensualesPage() {
   const [actSel, setActSel] = useState<Set<number>>(new Set());
   const [pubSel, setPubSel] = useState<Set<string>>(new Set());
   const [vidSel, setVidSel] = useState<Set<string>>(new Set());
+  const [fotosSel, setFotosSel] = useState<Set<string>>(new Set());
 
   const [generando, setGenerando] = useState(false);
   const [resumenEjecutivo, setResumenEjecutivo] = useState('');
@@ -101,6 +102,7 @@ export default function InformesMensualesPage() {
       setActSel(new Set(data.actividades.map((a: Actividad) => a.id)));
       setPubSel(new Set(data.publicaciones.map((p: Publicacion) => p.id)));
       setVidSel(new Set(data.podcasts.map((v: Podcast) => v.id)));
+      setFotosSel(new Set());
       setDatosCargados(true);
       setResumenEjecutivo('');
       setPlanSiguiente('');
@@ -164,6 +166,9 @@ export default function InformesMensualesPage() {
         actividades: actividades.filter((a) => actSel.has(a.id)).map((a) => ({ id: a.id, titulo: a.titulo, tipo: a.tipo, fecha: a.fecha, descripcion: a.descripcion })),
         publicaciones: publicaciones.filter((p) => pubSel.has(p.id)).map((p) => ({ id: p.id, title: p.title, authors: p.authors, category: p.category })),
         podcasts: podcasts.filter((v) => vidSel.has(v.id)).map((v) => ({ id: v.id, title: v.title, category: v.category })),
+        fotos: actividades
+          .filter((a) => actSel.has(a.id) && a.evidencia_url && fotosSel.has(a.evidencia_url))
+          .map((a) => ({ url: a.evidencia_url as string, pie: `${a.titulo.trim()} (${a.fecha.slice(0, 10).split('-').reverse().join('/')})` })),
         resumenEjecutivo,
         planSiguiente,
         dificultades,
@@ -252,6 +257,44 @@ export default function InformesMensualesPage() {
               seleccionados={pubSel}
               onToggle={(id) => toggle(pubSel, setPubSel, id as string)}
             />
+
+            {(() => {
+              const conFoto = actividades.filter((a) => actSel.has(a.id) && a.evidencia_url);
+              if (conFoto.length === 0) return null;
+              const MAXIMO_FOTOS = 6;
+              const alternarFoto = (url: string) => {
+                const copia = new Set(fotosSel);
+                if (copia.has(url)) copia.delete(url);
+                else if (copia.size < MAXIMO_FOTOS) copia.add(url);
+                setFotosSel(copia);
+              };
+              return (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-800 mb-1">Fotos de evidencia (opcional)</h3>
+                  <p className="text-sm text-gray-500 mb-2">
+                    Elige unas pocas para el informe (máximo {MAXIMO_FOTOS}). Seleccionadas: {fotosSel.size}.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {conFoto.map((a) => {
+                      const url = a.evidencia_url as string;
+                      const elegida = fotosSel.has(url);
+                      return (
+                        <button
+                          type="button"
+                          key={a.id}
+                          onClick={() => alternarFoto(url)}
+                          className={`text-left border-2 rounded overflow-hidden ${elegida ? 'border-blue-600' : 'border-gray-200'}`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={a.titulo} className="w-full h-24 object-cover" loading="lazy" />
+                          <span className="block text-xs p-1">{elegida ? '✓ ' : ''}{a.titulo}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             <SeccionSeleccion
               titulo="Podcasts del proyecto en el período"

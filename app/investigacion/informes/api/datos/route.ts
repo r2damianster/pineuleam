@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
   const [actividadesDifusion, publicacionesSitio, podcasts, actividadesPasantes, aportesValidados, contribucionesAcademicas, ciclosDelPeriodo, proyectosDelDocente] = await Promise.all([
     sql`
-      SELECT id, titulo, tipo, categoria, fecha, descripcion
+      SELECT id, titulo, tipo, categoria, fecha, descripcion, evidencia_url
       FROM actividades_difusion
       WHERE fecha BETWEEN ${desde} AND ${hasta}
         AND ${usuarioId} = ANY(profesores_responsables)
