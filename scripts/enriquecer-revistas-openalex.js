@@ -8,7 +8,7 @@ const sql = neon(process.env.DATABASE_URL);
 const API = 'https://api.openalex.org';
 const CORREO = process.env.OPENALEX_MAILTO || 'arturo.rodriguez@uleam.edu.ec'; // "polite pool" de OpenAlex
 const TAMANO_LOTE = 25;           // revistas por consulta de /sources
-const PAUSA_MS = 150;             // ~6 req/s, bajo el límite de 10/s
+const PAUSA_MS = 400;             // ~2 req/s: a 6 req/s OpenAlex respondió 429
 const MAX_TEMAS = 15;
 const MAX_TITULOS = 10;
 
@@ -18,7 +18,7 @@ const limite = Number((args.find((a) => a.startsWith('--limite=')) || '').split(
 
 const pausa = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function pedirJson(url, intentos = 4) {
+async function pedirJson(url, intentos = 6) {
   for (let intento = 1; intento <= intentos; intento += 1) {
     try {
       const respuesta = await fetch(url);
@@ -27,7 +27,7 @@ async function pedirJson(url, intentos = 4) {
       return await respuesta.json();
     } catch (error) {
       if (intento === intentos) throw error;
-      await pausa(1000 * intento * intento);
+      await pausa(5000 * intento);
     }
   }
 }
