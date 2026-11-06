@@ -173,7 +173,7 @@ Si el Post-Test ya se tomó antes y solo falta la encuesta (o quieres una encues
 7. **Foto / Evidencia del Evento o Podcast** → obligatorio subir una foto (captura de métricas del podcast, o foto del evento físico).
 8. Clic en **"Registrar Actividad de Difusión"**.
 
-**Qué pasa después:** la actividad queda **pendiente de aprobación** por el administrador del sitio antes de aparecer en la web pública — es normal que no la veas de inmediato en `carrerapineuleam.vercel.app`.
+**Qué pasa después:** la actividad queda **pendiente de aprobación** por el administrador del sitio antes de aparecer en la web pública — es normal que no la veas de inmediato en `pineuleam.vercel.app`.
 
 ### 6.1 Horas acreditables por podcast (solo Vinculación)
 Si marcaste tu propio nombre en "Participantes del podcast", el sistema calcula automáticamente tus horas acreditables según esta tabla — **no hay que pedirlas aparte**:

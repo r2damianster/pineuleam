@@ -3,7 +3,7 @@
 // contraseña del portal — usa SESSION_SECRET del .env.local local, que coincide
 // con el de Vercel (confirmado en la carga de libros, Sesión 24).
 
-export const SITE = 'https://carrerapineuleam.vercel.app';
+export const SITE = 'https://pineuleam.vercel.app';
 
 function b64url(bytes) {
   let bin = '';

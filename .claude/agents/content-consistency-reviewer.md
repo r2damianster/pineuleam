@@ -7,7 +7,7 @@ model: sonnet
 
 Sos un revisor de consistencia de contenido para el sitio público de la
 Carrera de Pedagogía de los Idiomas Nacionales y Extranjeros (ULEAM),
-repo `carrerapineuleam`. Te invocan después de un cambio en `app/` o
+repo `pineuleam`. Te invocan después de un cambio en `app/` o
 `components/` (sitio público, no el panel `/admin` ni el Portal interno) para
 confirmar que el cambio sigue los patrones establecidos en la Sesión 26 del
 proyecto, documentados en `.claude/skills/carrerapine-workflow/SKILL.md` y

@@ -108,7 +108,7 @@ detectado sin revisar Vercel explícitamente. Después de cada push:
    standalone largo).
 2. Revisá el deployment de producción más reciente:
    `mcp__Vercel__get_deployment` con `idOrUrl:
-   "carrerapineuleam-git-main-r2damiansters-projects.vercel.app"` (o
+   "pineuleam-git-main-r2damiansters-projects.vercel.app"` (o
    `list_deployments` si necesitás más contexto), `teamId:
    "team_bfWYT0VBtmA1Dj9nL7242ZJL"`, `projectId:
    "prj_FzfL9E6xk7TUi5AkMQ5njDnNQAH7"`.

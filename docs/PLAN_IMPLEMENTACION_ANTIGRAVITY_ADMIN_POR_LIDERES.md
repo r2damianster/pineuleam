@@ -55,7 +55,7 @@
 9. **Nada de datos inventados** (personas, correos, proyectos). Si falta un dato, se deja `NULL` o se pregunta.
 10. Nombres descriptivos (nada de `s`, `i`, `val`, `tmp`, `cb`). Estado de formularios React: releer el objeto completo tras pegar bloques (claves duplicadas rompieron un build). Texto visible del **sitio público** con `t('clave')` en `lib/i18n.tsx` (ES+EN); el portal/admin va en español fijo como el resto.
 11. Toda función que deje algo pendiente agrega su regla en `lib/notificaciones.ts` + fila en `NOTIFICACIONES.md` (WP10).
-12. Tras push: `list_deployments` de Vercel (proyecto `carrerapineuleam`, `prj_FzfL9E6xk7TUi5AkMQ5njDnNQAH7`, team `team_bfWYT0VBtmA1Dj9nL7242ZJL`) debe dar `READY`; si `ERROR`, leer `list_deployment_events` y corregir **antes** de seguir.
+12. Tras push: `list_deployments` de Vercel (proyecto `pineuleam`, `prj_FzfL9E6xk7TUi5AkMQ5njDnNQAH7`, team `team_bfWYT0VBtmA1Dj9nL7242ZJL`) debe dar `READY`; si `ERROR`, leer `list_deployment_events` y corregir **antes** de seguir.
 13. **No commitear ni pushear sin instrucción del usuario.** Un PR por fase.
 14. Antes de editar un archivo compartido (`middleware.ts`, `app/portal/dashboard/page.tsx`, `lib/notificaciones.ts`, `app/api/difusion/route.ts`): **leerlo completo**; otra sesión (Claude) lo pudo cambiar. Cambios mínimos y quirúrgicos; no reformatear ni reordenar.
 

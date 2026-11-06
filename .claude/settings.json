@@ -12,10 +12,10 @@
       "Bash(powershell.exe -Command \"Get-ChildItem C:\\\\tmp\\\\test_cert*\")",
       "Bash(git commit -m ' *)",
       "PowerShell(Copy-Item \"C:\\\\Users\\\\User\\\\Documents\\\\Desarrollo Web\\\\proyecto-innovacion-e-internacionalizacion\\\\docs\\\\WhatsApp Image 2026-08-14 at 08.38.13.jpeg\" \"C:\\\\Users\\\\User\\\\Documents\\\\Desarrollo Web\\\\proyecto-innovacion-e-internacionalizacion\\\\public\\\\images\\\\Feria-Proyectos-STEAM-Junio2026.jpeg\")",
-      "Bash(curl -s \"https://carrerapineuleam.vercel.app/vinculacion/pasantes\" -o /dev/null -w \"%{http_code}\\\\n\")",
+      "Bash(curl -s \"https://pineuleam.vercel.app/vinculacion/pasantes\" -o /dev/null -w \"%{http_code}\\\\n\")",
       "Bash(node --env-file=.env.local -e ' *)",
       "Bash(node --env-file=.env.local scripts/migrate-beneficiarios-perfil.js)",
-      "Bash(curl -s \"https://carrerapineuleam.vercel.app/registro\" -o /dev/null -w \"%{http_code}\\\\n\")"
+      "Bash(curl -s \"https://pineuleam.vercel.app/registro\" -o /dev/null -w \"%{http_code}\\\\n\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\Documents\\Desarrollo Web\\proyecto-innovacion-e-internacionalizacion\\docs"

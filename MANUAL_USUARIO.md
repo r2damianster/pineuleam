@@ -2,7 +2,7 @@
 
 Bienvenido al manual de uso del **Portal PINE** (Innovaciones Pedagógicas e Internacionalización), ULEAM. Sistema para gestionar el trabajo de campo de Vinculación (Club de Inglés y otros espacios), Investigación, y el registro de indicadores (MCER, asistencia, encuestas, difusión).
 
-**🌐 Acceso a la plataforma:** [https://carrerapineuleam.vercel.app/portal/login](https://carrerapineuleam.vercel.app/portal/login)
+**🌐 Acceso a la plataforma:** [https://pineuleam.vercel.app/portal/login](https://pineuleam.vercel.app/portal/login)
 
 > Esta es distinta de la página pública del proyecto (`/investigacion/proyecto-innovacion`, etc.) — el Portal es solo para quienes tienen cuenta.
 
@@ -14,8 +14,8 @@ No todos los roles se autoregistran — depende de quién eres:
 
 | Rol | ¿Cómo entra por primera vez? |
 |---|---|
-| **Profesor** | Se autoregistra en [/registro](https://carrerapineuleam.vercel.app/registro), pero **solo si su correo está en la lista autorizada del proyecto** (contacta al líder si sale "correo no autorizado"). |
-| **Estudiante / Pasante-instructor de vinculación** | **No hay pantalla de registro.** Tu profesor te da de alta desde Administrar Pasantes (solo nombres/apellidos/email). La primera vez que entras en [/portal/login](https://carrerapineuleam.vercel.app/portal/login) con ese correo, la clave que escribas queda guardada como tu contraseña definitiva — de ahí en adelante entras normal. |
+| **Profesor** | Se autoregistra en [/registro](https://pineuleam.vercel.app/registro), pero **solo si su correo está en la lista autorizada del proyecto** (contacta al líder si sale "correo no autorizado"). |
+| **Estudiante / Pasante-instructor de vinculación** | **No hay pantalla de registro.** Tu profesor te da de alta desde Administrar Pasantes (solo nombres/apellidos/email). La primera vez que entras en [/portal/login](https://pineuleam.vercel.app/portal/login) con ese correo, la clave que escribas queda guardada como tu contraseña definitiva — de ahí en adelante entras normal. |
 | **Beneficiario / Participante** | **Nunca tiene cuenta ni contraseña.** Lo registra su instructor o profesor desde `/vinculacion/registrar-evaluar` como parte de sus datos, no como usuario del sistema — siempre junto con su Pre-Test. |
 
 Tras entrar llegas a `/portal/dashboard`, donde ves solo las tarjetas que te corresponden según tu rol y tus módulos asignados.

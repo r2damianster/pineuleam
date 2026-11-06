@@ -3,9 +3,9 @@ import { OAuth2Client } from 'google-auth-library';
 // Redirect URI fijo, debe coincidir EXACTO con el registrado en Google Cloud
 // Console (OAuth Client "PineCarrera") — no derivarlo del request para evitar
 // mismatches en preview deployments.
-export const YOUTUBE_REDIRECT_URI = 'https://carrerapineuleam.vercel.app/api/youtube/oauth-callback';
+export const YOUTUBE_REDIRECT_URI = 'https://pineuleam.vercel.app/api/youtube/oauth-callback';
 export const YOUTUBE_UPLOAD_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
-export const SITE_ORIGIN = 'https://carrerapineuleam.vercel.app';
+export const SITE_ORIGIN = 'https://pineuleam.vercel.app';
 
 export function getOAuthClient() {
   return new OAuth2Client(
