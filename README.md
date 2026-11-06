@@ -6,7 +6,7 @@ Sitio público del proyecto de Innovaciones Pedagógicas e Internacionalización
 **Estado:** Sitio público funcional ✅ — Portal PINE (Neon) construido y desplegado ✅ — Confirmación visual & Redirección en Formularios ✅ — Módulo Superadmin con 'Ver como' (Impersonar) ✅ — Panel de Indicadores & Supervisión ✅ — i18n ES/EN completo ✅ — Dedupe en tiempo real, subaulas y auditoría IA de asistencia ✅ — Informe Semestral del Supervisor (antes "mensual"), entidad beneficiaria por espacio y redacción con IA de actividades no previstas ✅
 **Tech Stack:** Next.js 14 (App Router) + TypeScript + TailwindCSS + Neon (Postgres Serverless) + Cloudinary
 **Sitio en producción:** https://carrerapineuleam.vercel.app
-**Repositorio:** https://github.com/r2damianster/carrerapineuleam.git
+**Repositorio:** https://github.com/r2damianster/pineuleam.git
 
 > ⚠️ Este README es un resumen de alto nivel. La fuente de verdad detallada y actualizada del proyecto (esquema de base de datos, decisiones de diseño, historial sesión por sesión) es [`CLAUDE.md`](./CLAUDE.md).
 

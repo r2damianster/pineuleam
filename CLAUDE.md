@@ -18,7 +18,7 @@
 **Nombre:** Proyecto Innovaciones Pedagógicas e Internacionalización
 **Grupo de Investigación:** Innovaciones pedagógicas para el desarrollo sostenible: inclusión, interculturalidad e interdisciplinaridad (actualización 2026-05-15, doc en `public/admin-assets/2026_GrupoInvestigacion.pdf`)
 **Institución:** Universidad Laica Eloy Alfaro de Manabí (ULEAM)
-**Repositorio:** https://github.com/r2damianster/carrerapineuleam.git
+**Repositorio:** https://github.com/r2damianster/pineuleam.git
 **Versión actual:** 0.12.16
 **Última sesión:** 2026-10-11 (Sesión 66 — video tutorial para externos de contribuciones por enlace/QR). Historial completo por sesión: `docs/HISTORIAL_SESIONES.md`.
 **Ruta pública del proyecto:** `/investigacion/proyecto-innovacion` (antes `/pine`)
@@ -189,7 +189,7 @@ Dos PDFs privados exclusivos del proyecto Innovaciones Pedagógicas e Internacio
 
 Auditoría pedida por el usuario tras fallos de deploy y trabajo en paralelo con Antigravity. Fuentes: `git log`, Vercel (deployments + build logs + runtime logs), `tsc`, barrido de rutas API y de docs.
 
-### Fallo de deploy real encontrado (Vercel, proyecto `carrerapineuleam`)
+### Fallo de deploy real encontrado (Vercel, proyecto `pineuleam` (antes `carrerapineuleam`))
 - `dpl_HqedNdC9…` — commit `012d646` (feat difusión con IA/maestría, 2026-09-23) → **ERROR**: `Syntax Error … Expected ',', got 'hora'` en `app/vinculacion/difusion/page.tsx:61-67` (objeto de estado inicial con claves duplicadas/coma faltante: `audiencia_alcanzada` dos veces). Se pusheó **sin correr `npm run build`/`tsc`**. Producción siguió sirviendo el build anterior hasta que `c486110` lo arregló (~3 h después). Nada roto en runtime: 0 errores en logs de producción últimos 7 días.
 - Deploys `CANCELED` (3) = commits de solo docs que llegaron pegados a otro commit; `vercel-ignore-build.sh` los salta a propósito (evita cuota de ~300 funciones por deploy). No son fallos.
 
