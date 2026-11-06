@@ -126,6 +126,7 @@ export default function BuscadorRevistasPage() {
       <p className="mb-6 text-slate-600">
         Ingresa los datos de tu artículo. Solo el título es obligatorio; mientras más datos aportes, mejor el resultado.
         Las revistas diamante son de acceso abierto y no cobran a autores ni a lectores.
+        {" "}<Link href="/portal/tutoriales?v=buscador-revistas" className="font-semibold text-[#003366] underline">Ver tutorial en video (1 min)</Link>.
       </p>
 
       <form onSubmit={manejarBusqueda} className="mb-8 space-y-4 rounded-xl border border-slate-200 p-5 shadow-sm">

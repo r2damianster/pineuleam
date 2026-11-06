@@ -31,6 +31,14 @@ export const TUTORIALES: Tutorial[] = [
     roles: ['profesor', 'admin', 'secretaria'],
   },
   {
+    id: 'buscador-revistas',
+    titulo: 'Buscador de revistas diamante: encuentra dónde publicar sin costo',
+    descripcion: 'Cómo usar /utilidades/revistas: ingresa el título (obligatorio) y, si quieres, resumen, palabras clave y referencias; obtén una lista ordenada de revistas de acceso abierto sin cargos, con cuartil y motivo de cada sugerencia, y expórtala a CSV. Catálogo: Universitat de València (Zenodo).',
+    duracion: '1:01',
+    archivo: '/video/buscador-revistas-tutorial.mp4',
+    roles: ['profesor', 'admin', 'secretaria'],
+  },
+  {
     id: 'contribucion-externa',
     titulo: 'Contribuciones por enlace: qué ve y qué hace quien lo recibe',
     descripcion: 'El mismo video que ve la persona externa al abrir tu enlace/QR: dónde están los datos, autocompletar por DOI o PDF y cómo agregar los autores en orden.',
