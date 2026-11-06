@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useLanguage } from '@/lib/i18n';
 
-const SITE_URL = 'https://pineuleam.vercel.app/';
+const SITE_URL = 'https://www.pineuleam.net/';
 const QR_API = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(SITE_URL)}`;
 
 interface QRModalProps {

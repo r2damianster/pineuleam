@@ -4,7 +4,7 @@
 // Así se valida auth + zod + Prisma create tal como corren en Vercel, no solo
 // el schema de la base.
 
-const SITE = 'https://pineuleam.vercel.app';
+const SITE = 'https://www.pineuleam.net';
 const secret = process.env.SESSION_SECRET;
 if (!secret) throw new Error('Falta SESSION_SECRET en el entorno');
 

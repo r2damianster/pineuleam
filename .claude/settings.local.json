@@ -39,7 +39,7 @@
       "Bash(node --env-file=.env.local -e ' *)",
       "Bash(kill %1)",
       "Bash(node --env-file=.env.local scripts/test-beneficiario-perfil.mjs)",
-      "Bash(curl -s \"https://pineuleam.vercel.app/vinculacion/beneficiarios\" -o /dev/null -w \"%{http_code}\\\\n\")",
+      "Bash(curl -s \"https://www.pineuleam.net/vinculacion/beneficiarios\" -o /dev/null -w \"%{http_code}\\\\n\")",
       "Bash(node --env-file=.env.local scripts/migrate-actividades-difusion-extend.js)",
       "Bash(taskkill //F //PID 6644)",
       "Bash(node --env-file=.env.local scripts/migrate-publications.js)",
