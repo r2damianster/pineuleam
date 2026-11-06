@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **Buscador de revistas diamante** (`/utilidades/revistas`): sugiere revistas de acceso abierto sin costo según título (obligatorio), resumen, abstract, keywords y referencias; ranking por afinidad temática, referencias (Crossref) y cuartil, con explicación por revista y exportación CSV. Nueva tabla `revistas_diamante` (catálogo de la Universitat de València, Zenodo https://zenodo.org/records/22763970, enriquecido con OpenAlex).
+
 - Sumar las horas autónomas aprobadas a `GET /api/admin/stats` (Dashboard PINE), indicadores de supervisión, tarjeta "Mi Avance" del dashboard y `/api/estudiantes` (hoy solo suman en `/portal/mi-avance`).
 - Aviso opcional al pasante cuando el supervisor rechaza una actividad autónoma o de investigación (hoy solo avisa por asistencia rechazada).
 - Completar la zona (Cantón/Parroquia/Barrio/Ubicación) de los espacios "Cross Worlds for Connections", "Fundación Submarino Amarillo" y "UE Manuela Cañizares Speaking Club" en `/vinculacion/espacios` (no confirmados, quedaron sin dato a propósito).
