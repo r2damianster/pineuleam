@@ -8,7 +8,8 @@ const sql = neon(process.env.DATABASE_URL);
 const API = 'https://api.openalex.org';
 const CORREO = process.env.OPENALEX_MAILTO || 'arturo.rodriguez@uleam.edu.ec'; // "polite pool" de OpenAlex
 const TAMANO_LOTE = 25;           // revistas por consulta de /sources
-const PAUSA_MS = 400;             // ~2 req/s: a 6 req/s OpenAlex respondió 429
+const CLAVE_API = process.env.OPENALEX_API_KEY; // sin clave, OpenAlex limita por IP (presupuesto diario compartido)
+const PAUSA_MS = CLAVE_API ? 120 : 400;
 const MAX_TEMAS = 15;
 const MAX_TITULOS = 10;
 
@@ -36,7 +37,7 @@ const normalizarIssn = (valor) => (valor ? String(valor).trim().toUpperCase() : 
 
 async function procesarLote(revistas) {
   const issnsLote = [...new Set(revistas.flatMap((revista) => [revista.issn, revista.eissn]).map(normalizarIssn).filter(Boolean))];
-  const url = `${API}/sources?filter=issn:${issnsLote.join('|')}&per-page=200&mailto=${encodeURIComponent(CORREO)}`;
+  const url = `${API}/sources?filter=issn:${issnsLote.join('|')}&per-page=200&mailto=${encodeURIComponent(CORREO)}${CLAVE_API ? `&api_key=${CLAVE_API}` : ''}`;
   const { results: fuentes } = await pedirJson(url);
 
   // Índice ISSN -> fuente de OpenAlex
@@ -64,7 +65,7 @@ async function procesarLote(revistas) {
     try {
       const idCorto = String(fuente.id).split('/').pop();
       const obras = await pedirJson(
-        `${API}/works?filter=primary_location.source.id:${idCorto}&sort=publication_date:desc&per-page=${MAX_TITULOS}&select=title&mailto=${encodeURIComponent(CORREO)}`,
+        `${API}/works?filter=primary_location.source.id:${idCorto}&sort=publication_date:desc&per-page=${MAX_TITULOS}&select=title&mailto=${encodeURIComponent(CORREO)}${CLAVE_API ? `&api_key=${CLAVE_API}` : ''}`,
       );
       titulosRecientes = (obras.results || []).map((obra) => obra.title).filter(Boolean);
       await pausa(PAUSA_MS);
