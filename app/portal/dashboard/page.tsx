@@ -305,6 +305,7 @@ export default async function PortalDashboard() {
                   <Link href="/utilidades/pat-maestria" className="text-teal-600 hover:underline">» PATs Maestría</Link>
                   <Link href="/utilidades/pares-lectores" className="text-teal-600 hover:underline">» Pares Lectores</Link>
                   <Link href="/utilidades/certificados" className="text-teal-600 hover:underline">» Certificados</Link>
+                  <Link href="/utilidades/revistas" className="text-teal-600 hover:underline">» Buscador de revistas diamante</Link>
                 </div>
               </div>
             )}
