@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/i18n";
 import ImpersonationBanner from "@/components/ImpersonationBanner";
+import GoatCounter from "@/components/GoatCounter";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
           <ImpersonationBanner />
           {children}
         </LanguageProvider>
+        <GoatCounter />
       </body>
     </html>
   );
