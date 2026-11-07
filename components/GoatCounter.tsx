@@ -18,21 +18,11 @@ const INTERNAL_PATH_PREFIXES = [
   '/registro',
   '/investigacion/espacios',
   '/investigacion/informes',
-  '/vinculacion/espacios',
-  '/vinculacion/pasantes',
-  '/vinculacion/asistencia',
-  '/vinculacion/registrar-evaluar',
-  '/vinculacion/evaluacion-final',
-  '/vinculacion/encuesta',
-  '/vinculacion/difusion',
-  '/vinculacion/supervisar',
-  '/vinculacion/topes-horas',
-  '/vinculacion/investigacion-actividades',
-  '/vinculacion/actividades-autonomas',
-  '/vinculacion/informes',
+  '/vinculacion',
 ];
 
 function isPublicPath(pathname: string): boolean {
+  if (pathname.startsWith('/vinculacion/dinamicas-linguisticas')) return true;
   return !INTERNAL_PATH_PREFIXES.some((internalPrefix) => pathname.startsWith(internalPrefix));
 }
 
